@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>京王線 列車走行位置 — Live Board</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23da007a'/%3E%3Crect x='8' y='6' width='16' height='15' rx='3' fill='%23fff'/%3E%3Crect x='10' y='9' width='12' height='6' rx='1' fill='%23da007a'/%3E%3Ccircle cx='12' cy='18' r='1.6' fill='%23da007a'/%3E%3Ccircle cx='20' cy='18' r='1.6' fill='%23da007a'/%3E%3Crect x='10' y='23' width='4' height='4' fill='%23fff'/%3E%3Crect x='18' y='23' width='4' height='4' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header>
+    <div class="head-top">
+      <div class="brand">
+        <span class="mark"></span>
+        <h1>京王線 走行位置</h1>
+        <span class="sub">Keio Line live train positions</span>
+      </div>
+
+      <div class="status-pills" id="statusPills"></div>
+
+      <div class="spacer"></div>
+
+      <div class="clock">
+        <div class="feed-time" id="feedTime">--:--:--</div>
+        <div class="feed-label">feed time <span id="staleFlag"></span></div>
+      </div>
+
+      <div class="refresh">
+        <svg class="ring" viewBox="0 0 36 36" id="ring">
+          <circle class="bg" cx="18" cy="18" r="15.5"></circle>
+          <circle class="fg" cx="18" cy="18" r="15.5"
+                  stroke-dasharray="97.4" stroke-dashoffset="0" id="ringFg"></circle>
+        </svg>
+        <button class="btn" id="pauseBtn" title="自動更新の一時停止">⏸ 停止</button>
+        <button class="btn" id="refreshBtn" title="今すぐ更新">↻ 更新</button>
+      </div>
+    </div>
+
+    <div class="notice-bar" id="noticeBar"></div>
+  </header>
+
+  <div class="controls">
+    <div class="control-group" id="branchFilter">
+      <span class="cg-label">路線</span>
+    </div>
+    <div class="control-group" id="dirFilter">
+      <span class="cg-label">方向</span>
+      <button class="chip on dir-up"   data-dir="up">上り <span class="count-badge" id="cnt-up"></span></button>
+      <button class="chip on dir-down" data-dir="down">下り <span class="count-badge" id="cnt-down"></span></button>
+    </div>
+    <div class="control-group" id="typeFilter">
+      <span class="cg-label">種別</span>
+    </div>
+    <input class="search" id="search" placeholder="列車番号・行先で検索…">
+    <div class="spacer"></div>
+    <div class="view-toggle" id="viewToggle">
+      <button data-view="map" class="active">🚆 走行位置</button>
+      <button data-view="board">📋 一覧</button>
+    </div>
+  </div>
+
+  <div class="summary" id="summary"></div>
+
+  <main>
+    <div id="mapView"></div>
+    <div id="boardView" class="hide"></div>
+  </main>
+
+  <div id="detail"></div>
+
+  <footer>
+    データ提供: 京王電鉄 列車走行位置 (opentidkeio.jp) を再構成した非公式ビューアです。
+    30秒ごとに自動更新。 &nbsp;·&nbsp; Unofficial desktop reader — data © Keio Corporation.
+  </footer>
+
+  <script src="/app.js"></script>
+</body>
+</html>

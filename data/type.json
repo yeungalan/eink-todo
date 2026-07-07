@@ -1,0 +1,15 @@
+{
+"type":[
+{"code":"0","link":"#PART_TRAIN_TOEI"},
+{"code":"1","link":""},
+{"code":"2","link":"#PART_TRAIN_2000"},
+{"code":"3","link":""},
+{"code":"4","link":"#PART_TRAIN_9000"},
+{"code":"5","link":"#PART_TRAIN_5000"},
+{"code":"6","link":""},
+{"code":"7","link":"#PART_TRAIN_9000"},
+{"code":"8","link":"#PART_TRAIN_8000"},
+{"code":"9","link":"#PART_TRAIN_9000"},
+{"code":"99","link":""}
+]
+}

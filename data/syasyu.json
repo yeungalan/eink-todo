@@ -1,0 +1,16 @@
+{
+"syasyu":[
+{"code":"1","style":"STYLE_STOP_0","iconname":"特","name":"特急","name_e":"Special Express"},
+{"code":"2","style":"STYLE_STOP_2","iconname":"急","name":"急行","name_e":"Express"},
+{"code":"3","style":"STYLE_STOP_4","iconname":"快","name":"快速","name_e":"Rapid"},
+{"code":"4","style":"STYLE_STOP_DUMMY","iconname":"","name":"","name_e":""},
+{"code":"5","style":"STYLE_STOP_3","iconname":"区","name":"区間急行","name_e":"Semi Express"},
+{"code":"6","style":"STYLE_STOP_5","iconname":"各","name":"各駅停車","name_e":"Local"},
+{"code":"7","style":"STYLE_STOP_DUMMY","iconname":"","name":"","name_e":""},
+{"code":"8","style":"STYLE_STOP_DUMMY","iconname":"","name":"","name_e":""},
+{"code":"9","style":"STYLE_STOP_6","iconname":"京","name":"京王ライナー","name_e":"KEIO LINER"},
+{"code":"10","style":"STYLE_STOP_7","iconname":"臨","name":"臨時","name_e":"Extra"},
+{"code":"11","style":"STYLE_STOP_8","iconname":"高","name":"Mt.TAKAO","name_e":"Mt.TAKAO"},
+{"code":"99","style":"STYLE_MULTI_TRAIN","iconname":"","name":"","name_e":""}
+]
+}

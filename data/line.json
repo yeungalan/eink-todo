@@ -1,0 +1,7 @@
+{
+"line":[
+{"code":"1","name":"京王線","kubun":"KO","style":"STYLE_KEIO_LINE"},
+{"code":"2","name":"相模原線","kubun":"KO","style":"STYLE_KEIO_LINE"},
+{"code":"3","name":"井の頭線","kubun":"IN","style":"STYLE_INO_LINE"}
+]
+}
