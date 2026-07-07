@@ -237,7 +237,9 @@ function renderMap(trains) {
     const bm = el('span', 'bmark'); bm.style.background = b.Color;
     head.append(bm, el('h2', null, b.Name), el('span', 'bcount', `${list.length} 本`));
     const legend = el('div', 'legend');
-    legend.innerHTML = '<span><i class="lu"></i>上り</span><span><i class="ld"></i>下り</span>';
+    legend.innerHTML =
+      '<span><i class="lu"></i>上り</span><span><i class="ld"></i>下り</span>' +
+      '<span><i class="lg-at"></i>停車中</span><span><i class="lg-mid"></i>走行中</span>';
     head.append(legend);
     card.append(head);
 
@@ -258,6 +260,19 @@ function renderMap(trains) {
       tick.style.left = x; strip.append(tick);
       const lab = el('div', 'st-label', name); lab.style.left = x; strip.append(lab);
     });
+
+    // rail markers: solid dot = stopped at a station, hollow diamond = in transit.
+    const markers = el('div', 'rail-markers');
+    const seen = new Set();
+    list.forEach(t => {
+      const key = t.pos.toFixed(2) + '/' + (t.atStation ? 1 : 0);
+      if (seen.has(key)) return;
+      seen.add(key);
+      const m = el('div', 'rail-marker ' + (t.atStation ? 'at' : 'mid'));
+      m.style.left = xpx(n <= 1 ? 0 : t.pos / (n - 1)) + 'px';
+      markers.append(m);
+    });
+    strip.append(markers);
 
     const laneUp = el('div', 'lane-up');
     const laneDown = el('div', 'lane-down');
@@ -292,10 +307,13 @@ function placeLane(lane, trains, n, dir, xpx) {
 }
 
 function trainPill(t, dir) {
-  const pill = el('div', `train ${dir}` + (t.atStation ? ' stopped' : ''));
+  const pill = el('div', `train ${dir} ` + (t.atStation ? 'stopped' : 'moving'));
+  pill.title = t.atStation ? `${t.locName} に停車中` : `${t.locName} を走行中`;
   const ico = el('span', 'ico', t.typeIcon || '•');
   ico.style.background = t.color; ico.style.color = t.textOnColor;
   pill.append(ico);
+  // status pip: solid green dot = stopped at a station, hollow ring = moving
+  pill.append(el('span', 'pip ' + (t.atStation ? 'pip-at' : 'pip-mid')));
   const arrow = el('span', 'dir-arrow', dir === 'up' ? '↑' : '↓');
   pill.append(arrow);
   pill.append(el('span', 'dst', t.destination));
@@ -345,8 +363,9 @@ function renderBoard(trains) {
     tr.append(td(null, t.destination));
 
     const loc = el('td');
-    loc.append(el('span', t.atStation ? 'loc-at' : 'loc-between',
-      (t.atStation ? '● ' : '– ') + t.locName));
+    loc.append(
+      el('span', 'stbadge ' + (t.atStation ? 'at' : 'mid'), t.atStation ? '停車' : '走行'),
+      el('span', t.atStation ? 'loc-at' : 'loc-between', t.locName));
     tr.append(loc);
 
     tr.append(td(t.delayMin > 0 ? 'delay-pos' : 'delay-0', t.delayMin > 0 ? '+' + t.delayMin + '分' : '定時'));
