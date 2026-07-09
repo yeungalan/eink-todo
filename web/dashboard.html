@@ -278,9 +278,9 @@
   </div>
 
   <script>
-    // Keep the "done / total" counter honest as boxes are tapped, and stamp the
-    // real date into the header. Everything else is static markup so the panel
-    // still renders correctly if scripting is disabled in the Kindle browser.
+    // Keep the "done / total" counter honest as boxes are tapped. The header
+    // date is left as static markup so the panel matches the reference design
+    // and still renders correctly if scripting is disabled in the Kindle browser.
     (function () {
       var boxes = Array.prototype.slice.call(
         document.querySelectorAll('#todoList input[type=checkbox]'));
@@ -293,14 +293,6 @@
       }
       boxes.forEach(function (b) { b.addEventListener('change', recount); });
       recount();
-
-      try {
-        var d = new Date();
-        var m = ['January','February','March','April','May','June','July',
-                 'August','September','October','November','December'];
-        document.getElementById('updated').textContent =
-          m[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
-      } catch (e) {}
     })();
   </script>
 </body>
