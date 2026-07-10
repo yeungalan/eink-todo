@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8">
   <!-- Kindle Paperwhite (12th gen, 2024): 7" e-ink, 1264 x 1680 @ 300ppi, portrait -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Dashboard</title>
+  <title>ダッシュボード</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23000'/%3E%3Crect x='6' y='7' width='8' height='8' rx='1.5' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M18 9h9M18 13h9' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M18 20h9M18 24h9' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M6 21l2 2 4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
     /*
@@ -186,9 +186,9 @@
   <div class="sheet">
 
     <header class="masthead">
-      <h1>DASHBOARD</h1>
-      <p class="updated">Last Updated: <span id="updated">—</span>
-        &nbsp;&middot;&nbsp; Next: <span id="nextUpdate">—</span></p>
+      <h1>ダッシュボード</h1>
+      <p class="updated">最終更新: <span id="updated">—</span>
+        &nbsp;&middot;&nbsp; 次回更新: <span id="nextUpdate">—</span></p>
     </header>
 
     <hr class="rule">
@@ -199,7 +199,7 @@
       <div class="col">
         <div class="col-head">
           <img class="ico wi" id="wxHeadIcon" src="./img/weather/wi-day-cloudy.svg" width="30" height="30" alt="">
-          <h2>WEATHER</h2>
+          <h2>天気</h2>
         </div>
         <div class="weather">
           <img class="big-ico wi" id="wxIcon" src="./img/weather/wi-day-sunny.svg" width="76" height="76" alt="">
@@ -208,7 +208,7 @@
             <div class="cond" id="wxCond">&mdash;</div>
           </div>
         </div>
-        <div class="hilo">H:<span id="wxHigh">--</span>&deg;&nbsp;&nbsp;L:<span id="wxLow">--</span>&deg;
+        <div class="hilo">最高<span id="wxHigh">--</span>&deg;&nbsp;&nbsp;最低<span id="wxLow">--</span>&deg;
           &nbsp;&nbsp;体感<span id="wxFeels">--</span>&deg;</div>
         <div class="extra" id="wxExtra">&mdash;</div>
         <div class="wx-loc">渋谷 · <span id="wxObs">--:--</span> 時点</div>
@@ -251,13 +251,13 @@
               <rect x="13" y="32" width="4" height="4"/><rect x="22" y="32" width="4" height="4"/><rect x="31" y="32" width="4" height="4"/>
             </g>
           </svg>
-          <h2>TODAY&rsquo;S EVENTS</h2>
+          <h2>本日の予定</h2>
         </div>
         <ul class="events">
-          <li><span class="t">09:00</span><span>Team Meeting</span></li>
-          <li><span class="t">14:00</span><span>Dentist</span></li>
-          <li><span class="t">19:00</span><span>Dinner</span></li>
-          <li><span class="t">21:00</span><span>Read / Relax</span></li>
+          <li><span class="t">09:00</span><span>チーム会議</span></li>
+          <li><span class="t">14:00</span><span>歯医者</span></li>
+          <li><span class="t">19:00</span><span>夕食</span></li>
+          <li><span class="t">21:00</span><span>読書・休憩</span></li>
         </ul>
       </div>
     </section>
@@ -266,19 +266,19 @@
 
     <section>
       <div class="todo-head">
-        <h2>TODAY&rsquo;S TODO</h2>
-        <div class="count"><span id="done">3</span> / <span id="total">8</span> completed</div>
+        <h2>本日のタスク</h2>
+        <div class="count"><span id="done">3</span> / <span id="total">8</span> 完了</div>
       </div>
 
       <ul class="todo" id="todoList">
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Finish AWS presentation</span></label></li>
-        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Buy groceries</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Call bank</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Japanese homework</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Read 20 pages</span></label></li>
-        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Workout</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Plan weekend trip</span></label></li>
-        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Review pull requests</span></label></li>
+        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">AWS資料を仕上げる</span></label></li>
+        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">買い物</span></label></li>
+        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">銀行に電話</span></label></li>
+        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">日本語の宿題</span></label></li>
+        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">20ページ読む</span></label></li>
+        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">運動</span></label></li>
+        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">週末の旅行を計画</span></label></li>
+        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">プルリクエストをレビュー</span></label></li>
       </ul>
     </section>
 

@@ -74,7 +74,7 @@ function renderWeather(w) {
   document.getElementById('wxIcon').src = WX_ICON + (w.icon || 'wi-na') + '.svg';
   document.getElementById('wxHeadIcon').src = WX_ICON + (w.icon || 'wi-na') + '.svg';
   set('wxTemp', Math.round(w.tempC));
-  set('wxCond', w.conditionJa + ' / ' + w.condition);
+  set('wxCond', w.conditionJa);
   set('wxHigh', Math.round(w.highC));
   set('wxLow', Math.round(w.lowC));
   set('wxFeels', Math.round(w.feelsC));
