@@ -17,8 +17,8 @@
       --paper: #fff;
       --line: #000;
       --hair: #9a9a9a;      /* faint row dividers — dithers to a light dot pattern */
-      --frame: 6px;
-      --pad: 30px;
+      --frame: 4px;
+      --pad: 14px;
     }
 
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -30,15 +30,20 @@
       font-family: "Helvetica Neue", Helvetica, Arial, "Liberation Sans", sans-serif;
       -webkit-font-smoothing: none;   /* crisper edges on e-ink */
       text-rendering: optimizeLegibility;
+      overflow-x: hidden;
     }
 
-    /* Page = the printed sheet inside a hard black frame, matching the mockup. */
+    /*
+      Sized to fit a small Kindle browser viewport (≈540 CSS px wide) on ONE
+      screen without scrolling. Everything is compact but still arm's-length
+      legible on a 300ppi panel. The sheet is a printed page inside a black frame.
+    */
     .sheet {
-      max-width: 780px;
+      max-width: 760px;
       margin: 0 auto;
       min-height: 100vh;
       border: var(--frame) solid var(--line);
-      padding: var(--pad) var(--pad) 20px;
+      padding: var(--pad);
       display: flex;
       flex-direction: column;
     }
@@ -46,19 +51,19 @@
     /* ---------- Masthead ---------- */
     .masthead h1 {
       margin: 0;
-      font-size: 60px;
+      font-size: 30px;
       line-height: 1;
       font-weight: 800;
-      letter-spacing: 1px;
+      letter-spacing: .5px;
     }
     .masthead .updated {
-      margin: 12px 0 0;
-      font-size: 20px;
+      margin: 6px 0 0;
+      font-size: 12px;
       font-weight: 400;
     }
 
-    .rule       { border: 0; border-top: 3px solid var(--line); margin: 20px 0; }
-    .rule-thick { border: 0; border-top: 4px solid var(--line); margin: 24px 0 22px; }
+    .rule       { border: 0; border-top: 2px solid var(--line); margin: 7px 0; }
+    .rule-thick { border: 0; border-top: 3px solid var(--line); margin: 8px 0 7px; }
 
     /* ---------- Info strip: weather · trains · events ---------- */
     .strip {
@@ -66,68 +71,68 @@
       grid-template-columns: 1fr 1fr 1fr;
       column-gap: 0;
     }
-    .strip .col { padding: 4px 16px; min-width: 0; }
+    .strip .col { padding: 2px 9px; min-width: 0; }
     .strip .col + .col { border-left: 2px solid var(--line); }
-    .strip .col:first-child { padding-left: 4px; }
-    .strip .col:last-child  { padding-right: 4px; }
+    .strip .col:first-child { padding-left: 2px; }
+    .strip .col:last-child  { padding-right: 2px; }
 
     .col-head {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 7px;
+      margin-bottom: 9px;
     }
-    .col-head .ico { width: 30px; height: 30px; flex: none; }
+    .col-head .ico { width: 20px; height: 20px; flex: none; }
     .col-head h2 {
       margin: 0;
-      font-size: 16px;
+      font-size: 13px;
       font-weight: 800;
-      letter-spacing: .5px;
+      letter-spacing: .3px;
       white-space: nowrap;
     }
 
     /* Weather — icons from Erik Flowers' weather-icons (currentColor → ink). */
     .wi { color: var(--ink); }
-    .weather { display: flex; align-items: center; gap: 14px; }
-    .weather .big-ico { width: 76px; height: 76px; flex: none; }
-    .weather .temp { font-size: 44px; font-weight: 800; line-height: 1; }
-    .weather .cond { font-size: 20px; margin-top: 4px; }
-    .hilo { font-size: 18px; margin-top: 18px; }
-    .extra { font-size: 17px; margin-top: 10px; line-height: 1.5; }
-    .wx-loc { font-size: 14px; margin-top: 10px; letter-spacing: .3px; color: #444; }
+    .weather { display: flex; align-items: center; gap: 8px; }
+    .weather .big-ico { width: 46px; height: 46px; flex: none; }
+    .weather .temp { font-size: 28px; font-weight: 800; line-height: 1; }
+    .weather .cond { font-size: 13px; margin-top: 3px; }
+    .hilo { font-size: 12px; margin-top: 8px; }
+    .extra { font-size: 11px; margin-top: 6px; line-height: 1.45; }
+    .wx-loc { font-size: 10px; margin-top: 6px; letter-spacing: .2px; color: #444; }
 
     /* Train status (運行情報) */
     .lines { list-style: none; margin: 0; padding: 0; }
-    .lines li { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 14px; }
+    .lines li { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
     .lines li:last-child { margin-bottom: 0; }
-    .marker { width: 30px; height: 30px; flex: none; margin-top: 2px; }
-    .line-name { font-size: 18px; line-height: 1.2; font-weight: 700; }
-    .line-state { font-size: 15px; margin-top: 2px; }
+    .marker { width: 20px; height: 20px; flex: none; margin-top: 1px; }
+    .line-name { font-size: 13px; line-height: 1.2; font-weight: 700; }
+    .line-state { font-size: 10px; margin-top: 1px; }
     .line-state.alert { font-weight: 700; }
 
-    /* Next-train panel — only shown during the 11:00–12:00 interval window. */
-    .nexttrain { margin-top: 16px; border-top: 2px solid var(--line); padding-top: 12px; }
+    /* Next-train panel — only shown during the 10:30–12:00 interval window. */
+    .nexttrain { margin-top: 9px; border-top: 2px solid var(--line); padding-top: 8px; }
     .nexttrain h3 {
-      margin: 0 0 4px; font-size: 14px; font-weight: 800; letter-spacing: .5px;
+      margin: 0 0 3px; font-size: 11px; font-weight: 800; letter-spacing: .3px;
     }
-    .nexttrain .route { font-size: 13px; margin-bottom: 10px; }
+    .nexttrain .route { font-size: 10px; margin-bottom: 6px; }
     .nt-list { list-style: none; margin: 0; padding: 0; }
-    .nt-list li { display: flex; align-items: center; gap: 8px; font-size: 15px; margin-bottom: 9px; }
+    .nt-list li { display: flex; align-items: center; gap: 6px; font-size: 11px; margin-bottom: 5px; }
     .nt-list li:last-child { margin-bottom: 0; }
     .nt-badge {
       flex: none; display: inline-grid; place-items: center;
-      min-width: 22px; height: 22px; padding: 0 4px;
-      border: 2px solid var(--line); border-radius: 5px;
-      font-size: 13px; font-weight: 800;
+      min-width: 18px; height: 18px; padding: 0 3px;
+      border: 1.5px solid var(--line); border-radius: 4px;
+      font-size: 11px; font-weight: 800;
     }
     .nt-eta { font-variant-numeric: tabular-nums; white-space: nowrap; font-weight: 700; }
     .nt-dst { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .nt-late { font-weight: 700; white-space: nowrap; }
-    .nt-empty { font-size: 14px; }
+    .nt-empty { font-size: 11px; }
 
     /* Events */
     .events { list-style: none; margin: 0; padding: 0; }
-    .events li { display: flex; gap: 14px; font-size: 19px; margin-bottom: 14px; }
+    .events li { display: flex; gap: 8px; font-size: 12px; margin-bottom: 6px; }
     .events li:last-child { margin-bottom: 0; }
     .events .t { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -139,47 +144,42 @@
     }
     .todo-head h2 {
       margin: 0;
-      font-size: 40px;
+      font-size: 22px;
       font-weight: 800;
-      letter-spacing: 1px;
+      letter-spacing: .5px;
     }
-    .todo-head .count { font-size: 24px; font-variant-numeric: tabular-nums; }
+    .todo-head .count { font-size: 13px; font-variant-numeric: tabular-nums; }
 
-    .todo { list-style: none; margin: 18px 0 0; padding: 0; }
+    .todo { list-style: none; margin: 5px 0 0; padding: 0; }
     .todo li { border-top: 1px solid var(--hair); }
     .todo li:first-child { border-top: 0; }
 
-    /* Each row is a big label — comfortable tap target on the touchscreen. */
+    /* Each row is a comfortable tap target on the touchscreen. */
     .todo label {
       display: flex;
       align-items: center;
-      gap: 26px;
-      padding: 22px 4px;
+      gap: 11px;
+      padding: 5px 2px;
       cursor: pointer;
-      font-size: 26px;
+      font-size: 14px;
     }
     .todo input { position: absolute; opacity: 0; pointer-events: none; }
 
     .box {
-      width: 40px;
-      height: 40px;
+      width: 20px;
+      height: 20px;
       flex: none;
-      border: 3px solid var(--line);
-      border-radius: 6px;
+      border: 2px solid var(--line);
+      border-radius: 4px;
       display: grid;
       place-items: center;
     }
     /* Tick hidden until the row is checked. */
-    .box .tick { width: 30px; height: 30px; visibility: hidden; }
+    .box .tick { width: 14px; height: 14px; visibility: hidden; }
     .todo input:checked + .box .tick { visibility: visible; }
 
     /* Fill remaining space so the frame reaches the bottom of the panel. */
     .spacer { flex: 1 1 auto; }
-
-    /* Give the whole sheet a touch more room on the tall Kindle panel. */
-    @media (min-aspect-ratio: 1/1) {
-      .sheet { max-width: 900px; }
-    }
   </style>
 </head>
 <body>
