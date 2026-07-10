@@ -19,7 +19,7 @@
 */
 
 var WX_ICON = './img/weather/';
-var ST_ICON = './img/status/';
+var ST_ICON = './img/'; // 運行情報 status glyphs: normal.svg / info.svg / adjust.svg
 
 var timer = null;
 

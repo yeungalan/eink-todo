@@ -215,19 +215,19 @@ func (c *Client) fetchDiainfo() (*Diainfo, error) {
 }
 
 // classifyStatus maps a Japanese status phrase onto a severity level and the
-// base name of the icon under web/img/status/.
+// base name of the icon under web/img/ (normal / info / adjust).
 func classifyStatus(status string) (level, icon string) {
 	switch {
 	case strings.Contains(status, "見合"):
-		return "suspended", "suspended"
+		return "suspended", "adjust"
 	case strings.Contains(status, "遅延"), strings.Contains(status, "遅れ"):
-		return "delay", "delay"
+		return "delay", "info"
 	case strings.Contains(status, "平常"):
 		return "normal", "normal"
 	case status == "":
 		return "normal", "normal"
 	default:
-		return "info", "delay"
+		return "info", "info"
 	}
 }
 
