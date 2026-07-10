@@ -98,6 +98,67 @@ type LineStatus struct {
 	Level string `json:"level"` // normal | delay | stop | error
 }
 
+// ---- Dashboard: weather (Open-Meteo proxy) ----
+
+type Weather struct {
+	Location    string  `json:"location"`
+	TempC       float64 `json:"tempC"`
+	FeelsC      float64 `json:"feelsC"`
+	Code        int     `json:"code"` // WMO weather code
+	IsDay       bool    `json:"isDay"`
+	Condition   string  `json:"condition"`   // English label
+	ConditionJa string  `json:"conditionJa"` // Japanese label
+	Icon        string  `json:"icon"`        // weather-icons name, e.g. "wi-day-sunny"
+	HighC       float64 `json:"highC"`
+	LowC        float64 `json:"lowC"`
+	Humidity    int     `json:"humidity"`
+	PrecipProb  int     `json:"precipProb"` // daily max precipitation probability (%)
+	WindKmh     float64 `json:"windKmh"`
+	ObservedAt  string  `json:"observedAt"` // "HH:MM" (JST) of the observation
+	FetchedAt   string  `json:"fetchedAt"`  // server fetch time (JST)
+}
+
+// ---- Dashboard: 運行情報 (Yahoo transit scrape) ----
+
+type LineInfo struct {
+	Name   string `json:"name"`   // e.g. "京王新線"
+	Href   string `json:"href"`   // "/diainfo/103/0"
+	Status string `json:"status"` // "平常運転" / "列車遅延" / ...
+	Detail string `json:"detail"` // free-text detail
+	Level  string `json:"level"`  // normal | delay | suspended | info
+	Icon   string `json:"icon"`   // status icon file base name
+}
+
+type Diainfo struct {
+	Lines     []LineInfo `json:"lines"`
+	UpdatedAt string     `json:"updatedAt"` // JST time the Yahoo page was fetched
+	Source    string     `json:"source"`    // "live" or "cache"
+	Stale     bool       `json:"stale"`
+}
+
+// ---- Dashboard: next-train panel (幡ヶ谷 → 新線新宿, live feed) ----
+
+type NextTrain struct {
+	TrainNo     string `json:"trainNo"`
+	TypeName    string `json:"typeName"`
+	TypeIcon    string `json:"typeIcon"`
+	Color       string `json:"color"`
+	TextOnColor string `json:"textOnColor"`
+	Destination string `json:"destination"`
+	LocName     string `json:"locName"`
+	AtStation   bool   `json:"atStation"`
+	DelayMin    int    `json:"delayMin"`
+	StopsAway   int    `json:"stopsAway"` // approx stations before reaching 幡ヶ谷
+}
+
+type NextTrainInfo struct {
+	From      string      `json:"from"`
+	To        string      `json:"to"`
+	Trains    []NextTrain `json:"trains"`
+	FetchedAt string      `json:"fetchedAt"`
+	Note      string      `json:"note"` // human-readable status when no trains resolvable
+}
+
 type Train struct {
 	TrainNo     string    `json:"trainNo"`     // trimmed train number
 	TypeCode    string    `json:"typeCode"`    // syasyu code
