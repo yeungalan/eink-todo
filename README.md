@@ -74,7 +74,7 @@ the Kindle browser only ever talks to this app:
   per WMO code with day/night variants.
 - **運行情報** each line gets a status glyph (`web/img/status/`): ✓ normal,
   △ delay/trouble, ✕ suspended.
-- **次の電車** panel (幡ヶ谷 → 新線新宿) is shown only during the 11:00–12:00
+- **次の電車** panel (幡ヶ谷 → 新線新宿) is shown only during the 10:30–12:00
   window, when the commute matters most.
 - **Adaptive auto-reload** keyed to Asia/Tokyo wall-clock time — quiet
   overnight, tightest around the morning window:
@@ -82,8 +82,8 @@ the Kindle browser only ever talks to this app:
   | JST window | Reload |
   |---|---|
   | 23:00–08:00 | every 3 hours |
-  | 08:00–11:00 | every 30 minutes |
-  | 11:00–12:00 | every 5 minutes (+ 次の電車) |
+  | 08:00–10:30 | every 30 minutes |
+  | 10:30–12:00 | every 5 minutes (+ 次の電車) |
   | 12:00–18:00 | every 30 minutes |
   | 18:00–19:00 | every 30 minutes |
   | 19:00–23:00 | every 1 hour |

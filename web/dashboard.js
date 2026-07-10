@@ -7,12 +7,12 @@
   window are keyed off Asia/Tokyo wall-clock time (computed with Intl so it is
   correct regardless of the Kindle's own timezone).
 
-  Auto-reload schedule (JST) — quiet overnight, tightest around the 11:00–12:00
+  Auto-reload schedule (JST) — quiet overnight, tightest around the 10:30–12:00
   commute window when the next-train panel is live:
 
       23:00–08:00   every 3 hours
-      08:00–11:00   every 30 minutes
-      11:00–12:00   every 5 minutes   (+ 次の電車 panel)
+      08:00–10:30   every 30 minutes
+      10:30–12:00   every 5 minutes   (+ 次の電車 panel)
       12:00–18:00   every 30 minutes
       18:00–19:00   every 30 minutes   (bridge; unspecified in the brief)
       19:00–23:00   every 1 hour
@@ -32,12 +32,15 @@ var jstStamp = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
 });
 
-function tokyoHour() {
+// Minutes since midnight, JST — enough resolution for the 10:30 boundary.
+function tokyoMinutes() {
   var parts = jstHM.formatToParts(new Date());
-  for (var i = 0; i < parts.length; i++) {
-    if (parts[i].type === 'hour') return parseInt(parts[i].value, 10);
-  }
-  return new Date().getHours();
+  var h = 0, m = 0;
+  parts.forEach(function (p) {
+    if (p.type === 'hour') h = parseInt(p.value, 10);
+    if (p.type === 'minute') m = parseInt(p.value, 10);
+  });
+  return h * 60 + m;
 }
 
 // "2026/07/10 10:25" in JST, from a Date (default now).
@@ -48,18 +51,18 @@ function stamp(d) {
 }
 function hm(d) { return jstHM.format(d || new Date()); }
 
-// interval for the given JST hour: [milliseconds, human label]
-function intervalFor(hour) {
-  if (hour >= 23 || hour < 8) return [3 * 3600e3, '3時間'];
-  if (hour < 11) return [30 * 60e3, '30分'];
-  if (hour < 12) return [5 * 60e3, '5分'];      // 11:00–12:00
-  if (hour < 18) return [30 * 60e3, '30分'];
-  if (hour < 19) return [30 * 60e3, '30分'];     // 18:00–19:00 bridge
-  return [60 * 60e3, '1時間'];                    // 19:00–23:00
+// interval for the given JST minute-of-day: [milliseconds, human label]
+function intervalFor(min) {
+  if (min >= 23 * 60 || min < 8 * 60) return [3 * 3600e3, '3時間'];
+  if (min < 10 * 60 + 30) return [30 * 60e3, '30分'];   // 08:00–10:30
+  if (min < 12 * 60) return [5 * 60e3, '5分'];           // 10:30–12:00
+  if (min < 18 * 60) return [30 * 60e3, '30分'];
+  if (min < 19 * 60) return [30 * 60e3, '30分'];          // 18:00–19:00 bridge
+  return [60 * 60e3, '1時間'];                             // 19:00–23:00
 }
 
-// 次の電車 panel is live only inside the 11:00–12:00 window.
-function inNextTrainWindow(hour) { return hour === 11; }
+// 次の電車 panel is live only inside the 10:30–12:00 window.
+function inNextTrainWindow(min) { return min >= 10 * 60 + 30 && min < 12 * 60; }
 
 // ---------- fetch helpers ----------
 async function getJSON(url) {
@@ -171,8 +174,7 @@ async function loadNextTrain() {
 
 // ---------- reload orchestration ----------
 async function loadAll() {
-  var hour = tokyoHour();
-  var showNext = inNextTrainWindow(hour);
+  var showNext = inNextTrainWindow(tokyoMinutes());
   document.getElementById('nextTrain').hidden = !showNext;
 
   var jobs = [loadWeather(), loadDiainfo()];
@@ -183,7 +185,7 @@ async function loadAll() {
 }
 
 function schedule() {
-  var iv = intervalFor(tokyoHour());
+  var iv = intervalFor(tokyoMinutes());
   var next = new Date(Date.now() + iv[0]);
   document.getElementById('nextUpdate').textContent = hm(next) + '（' + iv[1] + '毎）';
   clearTimeout(timer);
