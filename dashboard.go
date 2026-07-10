@@ -240,15 +240,21 @@ func stripTags(s string) string {
 const (
 	fromStation = "幡ヶ谷"
 	toStation   = "新線新宿"
+	// Rough dwell+run time between adjacent stations on this closely-spaced
+	// corridor. There is no public Keio timetable feed, so ETAs are estimated
+	// from live position — surfaced as 約N分 in the UI.
+	perStopMin  = 2.0
+	maxStopsFar = 8.0 // don't list trains further back than this
 )
 
 // nextTrains reads the already-normalized live state and pulls the upbound
-// (新宿方面) trains that are about to reach 幡ヶ谷, so the panel can answer
-// "what's the next train toward 新線新宿".
+// (新宿方面) trains heading for 幡ヶ谷, estimating each one's ETA from its live
+// position so the panel can answer "how long until the next few trains".
 //
-// On the 京王新線 the 新宿-bound sequence past 幡ヶ谷 is 笹塚 → 幡ヶ谷 → 初台 →
-// 新線新宿, so a train that still has to serve 幡ヶ谷 is either standing at 幡ヶ谷
-// (0 stops away) or coming from 笹塚 (1 stop away).
+// Only 京王新線 local service actually calls at 幡ヶ谷: a train reaches it either
+// already on the 新線 (笹塚→幡ヶ谷) or from the main line bound for the 都営新宿線
+// corridor (…→代田橋→笹塚→[新線]→幡ヶ谷). Main-line trains to 京王線新宿 skip the
+// 新線 entirely and are excluded by destination.
 func nextTrains(st *State) *NextTrainInfo {
 	info := &NextTrainInfo{
 		From:      fromStation,
@@ -259,35 +265,50 @@ func nextTrains(st *State) *NextTrainInfo {
 		info.Note = "運行情報を取得できませんでした"
 		return info
 	}
+
+	type scored struct {
+		nt   NextTrain
+		dist float64
+	}
+	var cand []scored
 	for _, t := range st.Trains {
 		if t.Direction != "up" {
 			continue
 		}
-		stops, ok := stopsToHatagaya(t)
+		dist, ok := distToHatagaya(t)
 		if !ok {
 			continue
 		}
-		info.Trains = append(info.Trains, NextTrain{
-			TrainNo:     t.TrainNo,
-			TypeName:    t.TypeName,
-			TypeIcon:    t.TypeIcon,
-			Color:       t.Color,
-			TextOnColor: t.TextOnColor,
-			Destination: t.Destination,
-			LocName:     t.LocName,
-			AtStation:   t.AtStation,
-			DelayMin:    t.DelayMin,
-			StopsAway:   stops,
+		eta := int(dist*perStopMin+0.5) + t.DelayMin
+		cand = append(cand, scored{
+			dist: dist,
+			nt: NextTrain{
+				TrainNo:     t.TrainNo,
+				TypeName:    t.TypeName,
+				TypeIcon:    t.TypeIcon,
+				Color:       t.Color,
+				TextOnColor: t.TextOnColor,
+				Destination: t.Destination,
+				LocName:     t.LocName,
+				AtStation:   t.AtStation,
+				DelayMin:    t.DelayMin,
+				StopsAway:   int(dist + 0.5),
+				EtaMin:      eta,
+			},
 		})
 	}
-	// Nearest first; cap to a tidy 3.
-	for i := 1; i < len(info.Trains); i++ {
-		for j := i; j > 0 && info.Trains[j].StopsAway < info.Trains[j-1].StopsAway; j-- {
-			info.Trains[j], info.Trains[j-1] = info.Trains[j-1], info.Trains[j]
+
+	// Nearest first, then keep the next 3.
+	for i := 1; i < len(cand); i++ {
+		for j := i; j > 0 && cand[j].dist < cand[j-1].dist; j-- {
+			cand[j], cand[j-1] = cand[j-1], cand[j]
 		}
 	}
-	if len(info.Trains) > 3 {
-		info.Trains = info.Trains[:3]
+	if len(cand) > 3 {
+		cand = cand[:3]
+	}
+	for _, s := range cand {
+		info.Trains = append(info.Trains, s.nt)
 	}
 	if len(info.Trains) == 0 {
 		info.Note = "接近中の上り列車はありません"
@@ -295,25 +316,35 @@ func nextTrains(st *State) *NextTrainInfo {
 	return info
 }
 
-// stopsToHatagaya returns how many stops away an upbound train is from serving
-// 幡ヶ谷, and whether it belongs on this panel at all.
-//
-// Only 京王新線 local service actually calls at 幡ヶ谷; the main-line expres­ses
-// that pass 笹塚 run to 京王線新宿 and never touch the 新線. We disambiguate the
-// two 笹塚-bound cases by destination: a corridor-bound train (都営新宿線 through
-// service or 新線新宿) counts, a 京王線新宿 train does not.
-func stopsToHatagaya(t Train) (int, bool) {
-	loc := nfkc(t.LocName)
-	hatagaya := nfkc(fromStation)
-	sasazuka := nfkc("笹塚")
-	switch {
-	case loc == hatagaya: // standing at 幡ヶ谷 — every train here serves it
-		return 0, true
-	case strings.Contains(loc, hatagaya) && strings.Contains(loc, sasazuka):
-		// running the 笹塚〜幡ヶ谷 gap (only the 新線 lays here)
-		return 1, true
-	case loc == sasazuka && corridorBound(t.Destination):
-		return 1, true
+// distToHatagaya returns the distance (in station-stops) an upbound train is
+// from serving 幡ヶ谷, and whether it belongs on this panel. Fractional values
+// come from between-station positions.
+func distToHatagaya(t Train) (float64, bool) {
+	switch t.Branch {
+	case "shinsen":
+		// shinsen indices: …新線新宿(3) 初台(4) 幡ヶ谷(5) 笹塚(6); up = toward 0.
+		// A train in the 笹塚〜幡ヶ谷 gap sits at pos 5..6; 幡ヶ谷 itself is 5.
+		d := t.Pos - 5
+		if d < -0.05 || d > 1.05 {
+			return 0, false // already past 幡ヶ谷 (初台 side) or not adjacent
+		}
+		if d < 0 {
+			d = 0
+		}
+		return d, true
+	case "main":
+		// main indices: 新宿(0) 笹塚(1) 代田橋(2) …; up = toward 0. Distance to
+		// 幡ヶ谷 ≈ pos (pos−1 stops to reach 笹塚, +1 to branch onto 幡ヶ谷).
+		if t.Pos < 0.95 {
+			return 0, false // past 笹塚 toward 京王線新宿 — off our corridor
+		}
+		if t.Pos > maxStopsFar {
+			return 0, false
+		}
+		if !corridorBound(t.Destination) {
+			return 0, false // bound for 京王線新宿, does not serve 幡ヶ谷
+		}
+		return t.Pos, true
 	default:
 		return 0, false
 	}

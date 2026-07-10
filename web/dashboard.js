@@ -146,7 +146,7 @@ function renderNextTrain(nt) {
 
     var eta = document.createElement('span');
     eta.className = 'nt-eta';
-    eta.textContent = t.stopsAway === 0 ? 'まもなく' : (t.stopsAway + '駅前');
+    eta.textContent = t.etaMin <= 0 ? 'まもなく' : ('約' + t.etaMin + '分');
     li.appendChild(eta);
 
     var dst = document.createElement('span');

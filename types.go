@@ -149,6 +149,7 @@ type NextTrain struct {
 	AtStation   bool   `json:"atStation"`
 	DelayMin    int    `json:"delayMin"`
 	StopsAway   int    `json:"stopsAway"` // approx stations before reaching 幡ヶ谷
+	EtaMin      int    `json:"etaMin"`    // estimated minutes to 幡ヶ谷 (position-derived, incl. delay)
 }
 
 type NextTrainInfo struct {
