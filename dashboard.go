@@ -166,13 +166,12 @@ func shortTime(iso string) string {
 
 const yahooDiainfoURL = "https://transit.yahoo.co.jp/diainfo/area/4"
 
-// Lines we surface, in display order. Chosen for a 幡ヶ谷 resident whose commute
-// runs 京王新線 ⟷ 都営新宿線, with the parent 京王線 and 井の頭線 for context.
+// Lines we surface, in display order. Scoped to the ones the user rides:
+// 京王新線 ⟷ 都営新宿線, plus the JR 山手線.
 var wantedLines = []string{
 	"/diainfo/103/0", // 京王新線
-	"/diainfo/102/0", // 京王線
 	"/diainfo/130/0", // 都営新宿線
-	"/diainfo/108/0", // 京王井の頭線
+	"/diainfo/21/0",  // JR 山手線
 }
 
 var (
