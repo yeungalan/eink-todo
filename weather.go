@@ -14,12 +14,29 @@ import (
 // (no API key required).
 type Weather struct {
 	TempC       float64 `json:"tempC"`
+	FeelsLikeC  float64 `json:"feelsLikeC"`
 	Condition   string  `json:"condition"`
 	HighC       float64 `json:"highC"`
 	LowC        float64 `json:"lowC"`
 	PrecipPct   int     `json:"precipPct"`
 	HumidityPct int     `json:"humidityPct"`
+	WindKph     float64 `json:"windKph"`
+	WindDir     string  `json:"windDir"`
+	UVIndex     float64 `json:"uvIndex"`
+	Sunrise     string  `json:"sunrise"`
+	Sunset      string  `json:"sunset"`
 	UpdatedAt   string  `json:"updatedAt"`
+}
+
+// compassDir converts a wind direction in degrees to a 16-point compass label.
+func compassDir(deg float64) string {
+	dirs := []string{"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
+		"S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"}
+	idx := int((deg/22.5)+0.5) % 16
+	if idx < 0 {
+		idx += 16
+	}
+	return dirs[idx]
 }
 
 // wmoCondition maps WMO weather codes (used by Open-Meteo) to a short label.
@@ -102,8 +119,8 @@ func (c *weatherCache) get() (*Weather, error) {
 func (c *weatherCache) fetch() (*Weather, error) {
 	url := fmt.Sprintf(
 		"https://api.open-meteo.com/v1/forecast?latitude=%s&longitude=%s"+
-			"&current=temperature_2m,relative_humidity_2m,weather_code"+
-			"&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max"+
+			"&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m"+
+			"&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset"+
 			"&timezone=auto",
 		c.lat, c.lon)
 
@@ -124,13 +141,19 @@ func (c *weatherCache) fetch() (*Weather, error) {
 	var raw struct {
 		Current struct {
 			Temperature2m       float64 `json:"temperature_2m"`
+			ApparentTemperature float64 `json:"apparent_temperature"`
 			RelativeHumidity2m  float64 `json:"relative_humidity_2m"`
 			WeatherCode         int     `json:"weather_code"`
+			WindSpeed10m        float64 `json:"wind_speed_10m"`
+			WindDirection10m    float64 `json:"wind_direction_10m"`
 		} `json:"current"`
 		Daily struct {
-			Temperature2mMax           []float64 `json:"temperature_2m_max"`
-			Temperature2mMin           []float64 `json:"temperature_2m_min"`
+			Temperature2mMax            []float64 `json:"temperature_2m_max"`
+			Temperature2mMin            []float64 `json:"temperature_2m_min"`
 			PrecipitationProbabilityMax []float64 `json:"precipitation_probability_max"`
+			UVIndexMax                  []float64 `json:"uv_index_max"`
+			Sunrise                     []string  `json:"sunrise"`
+			Sunset                      []string  `json:"sunset"`
 		} `json:"daily"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&raw); err != nil {
@@ -139,8 +162,11 @@ func (c *weatherCache) fetch() (*Weather, error) {
 
 	w := &Weather{
 		TempC:       round1(raw.Current.Temperature2m),
+		FeelsLikeC:  round1(raw.Current.ApparentTemperature),
 		Condition:   wmoCondition(raw.Current.WeatherCode),
 		HumidityPct: int(raw.Current.RelativeHumidity2m),
+		WindKph:     round1(raw.Current.WindSpeed10m),
+		WindDir:     compassDir(raw.Current.WindDirection10m),
 		UpdatedAt:   time.Now().Format(time.RFC3339),
 	}
 	if len(raw.Daily.Temperature2mMax) > 0 {
@@ -152,7 +178,25 @@ func (c *weatherCache) fetch() (*Weather, error) {
 	if len(raw.Daily.PrecipitationProbabilityMax) > 0 {
 		w.PrecipPct = int(raw.Daily.PrecipitationProbabilityMax[0])
 	}
+	if len(raw.Daily.UVIndexMax) > 0 {
+		w.UVIndex = raw.Daily.UVIndexMax[0]
+	}
+	if len(raw.Daily.Sunrise) > 0 {
+		w.Sunrise = formatClock(raw.Daily.Sunrise[0])
+	}
+	if len(raw.Daily.Sunset) > 0 {
+		w.Sunset = formatClock(raw.Daily.Sunset[0])
+	}
 	return w, nil
+}
+
+// formatClock turns Open-Meteo's "2026-08-17T05:03" into "5:03 AM".
+func formatClock(iso string) string {
+	t, err := time.Parse("2006-01-02T15:04", iso)
+	if err != nil {
+		return ""
+	}
+	return t.Format("3:04 PM")
 }
 
 func round1(f float64) float64 {

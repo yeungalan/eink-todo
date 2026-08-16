@@ -46,14 +46,14 @@
     /* ---------- Masthead ---------- */
     .masthead h1 {
       margin: 0;
-      font-size: 60px;
+      font-size: 30px;
       line-height: 1;
       font-weight: 800;
       letter-spacing: 1px;
     }
     .masthead .updated {
-      margin: 12px 0 0;
-      font-size: 20px;
+      margin: 8px 0 0;
+      font-size: 16px;
       font-weight: 400;
     }
 
@@ -88,8 +88,16 @@
     .weather .big-ico { width: 100px; height: 100px; flex: none; }
     .weather .temp { font-size: 64px; font-weight: 800; line-height: 1; }
     .weather .cond { font-size: 28px; margin-top: 6px; }
-    .weather .hilo { font-size: 24px; margin-top: 22px; }
-    .weather .extra { font-size: 24px; margin-top: 12px; }
+    .wx-feels { font-size: 22px; margin-top: 20px; }
+
+    .wx-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px 32px;
+      margin-top: 26px;
+    }
+    .wx-label { font-size: 14px; font-weight: 400; letter-spacing: .5px; }
+    .wx-value { font-size: 24px; font-weight: 700; margin-top: 4px; }
 
     /* Train status */
     .lines { list-style: none; margin: 0; padding: 0; }
@@ -200,8 +208,33 @@
             <div class="cond" id="wx-cond">&hellip;</div>
           </div>
         </div>
-        <div class="hilo">H:<span id="wx-high">&hellip;</span>&deg;&nbsp;&nbsp;L:<span id="wx-low">&hellip;</span>&deg;</div>
-        <div class="extra">Rain <span id="wx-precip">&hellip;</span>%&nbsp;&nbsp;&bull;&nbsp;&nbsp;Humidity <span id="wx-humidity">&hellip;</span>%</div>
+        <div class="wx-feels">Feels like <span id="wx-feels">&hellip;</span>&deg;C</div>
+        <div class="wx-grid">
+          <div class="wx-stat">
+            <div class="wx-label">HIGH / LOW</div>
+            <div class="wx-value"><span id="wx-high">&hellip;</span>&deg; / <span id="wx-low">&hellip;</span>&deg;</div>
+          </div>
+          <div class="wx-stat">
+            <div class="wx-label">RAIN CHANCE</div>
+            <div class="wx-value"><span id="wx-precip">&hellip;</span>%</div>
+          </div>
+          <div class="wx-stat">
+            <div class="wx-label">HUMIDITY</div>
+            <div class="wx-value"><span id="wx-humidity">&hellip;</span>%</div>
+          </div>
+          <div class="wx-stat">
+            <div class="wx-label">WIND</div>
+            <div class="wx-value" id="wx-wind">&hellip;</div>
+          </div>
+          <div class="wx-stat">
+            <div class="wx-label">UV INDEX</div>
+            <div class="wx-value" id="wx-uv">&hellip;</div>
+          </div>
+          <div class="wx-stat">
+            <div class="wx-label">SUNRISE / SUNSET</div>
+            <div class="wx-value" id="wx-sun">&hellip;</div>
+          </div>
+        </div>
       </div>
 
       <!-- Train status -->
@@ -240,14 +273,8 @@
         </ul>
       </div>
 
-      <!-- Todo -->
-      <div class="panel">
-        <div class="todo-head">
-          <h2>TODAY&rsquo;S TODO</h2>
-          <div class="count"><span id="total">0</span> tasks</div>
-        </div>
-        <ul class="todo" id="todoList"></ul>
-      </div>
+      <!-- Todo (paginated, 5 per panel — filled in by JS) -->
+      <div id="todoPanels"></div>
     </div>
 
     <div class="dots" id="dots"></div>
@@ -280,10 +307,14 @@
           if (w.error) throw new Error(w.error);
           document.getElementById('wx-temp').textContent = Math.round(w.tempC);
           document.getElementById('wx-cond').textContent = w.condition;
+          document.getElementById('wx-feels').textContent = Math.round(w.feelsLikeC);
           document.getElementById('wx-high').textContent = Math.round(w.highC);
           document.getElementById('wx-low').textContent = Math.round(w.lowC);
           document.getElementById('wx-precip').textContent = w.precipPct;
           document.getElementById('wx-humidity').textContent = w.humidityPct;
+          document.getElementById('wx-wind').textContent = Math.round(w.windKph) + ' km/h ' + w.windDir;
+          document.getElementById('wx-uv').textContent = w.uvIndex.toFixed(1);
+          document.getElementById('wx-sun').textContent = w.sunrise + ' / ' + w.sunset;
         }).catch(function () {
           document.getElementById('wx-cond').textContent = 'Unavailable';
         });
@@ -331,20 +362,48 @@
       }
 
       // ---- Todos (read-only view of a Trello board — see trello.go) ----
+      // Paginated 5-per-panel: each page becomes its own .panel in the
+      // rotation, so a long board doesn't cram everything onto one screen.
+      var TODO_PAGE_SIZE = 5;
+
       function renderTodos(items) {
-        var ul = document.getElementById('todoList');
-        ul.innerHTML = '';
-        items.forEach(function (t) {
-          var li = el('li');
-          var row = el('div', 'row');
-          row.appendChild(el('span', 'txt', t.text));
-          if (t.due) {
-            row.appendChild(el('span', 'due' + (t.overdue ? ' overdue' : ''), t.due));
+        var wrap = document.getElementById('todoPanels');
+        wrap.innerHTML = '';
+        var pages = Math.max(1, Math.ceil(items.length / TODO_PAGE_SIZE));
+
+        for (var p = 0; p < pages; p++) {
+          var chunk = items.slice(p * TODO_PAGE_SIZE, p * TODO_PAGE_SIZE + TODO_PAGE_SIZE);
+          var panel = el('div', 'panel');
+
+          var head = el('div', 'todo-head');
+          head.appendChild(el('h2', null, 'TODAY&rsquo;S TODO'));
+          var countLabel = pages > 1
+            ? ('Page ' + (p + 1) + ' of ' + pages + ' &middot; ' + items.length + ' tasks')
+            : (items.length + ' tasks');
+          head.appendChild(el('div', 'count', countLabel));
+          panel.appendChild(head);
+
+          var ul = el('ul', 'todo');
+          if (chunk.length === 0) {
+            ul.appendChild(el('li', null, '<div class="row"><span class="txt">No tasks</span></div>'));
+          } else {
+            chunk.forEach(function (t) {
+              var li = el('li');
+              var row = el('div', 'row');
+              row.appendChild(el('span', 'txt', t.text));
+              var badge = [t.list, t.due].filter(Boolean).join(' · ');
+              if (badge) {
+                row.appendChild(el('span', 'due' + (t.overdue ? ' overdue' : ''), badge));
+              }
+              li.appendChild(row);
+              ul.appendChild(li);
+            });
           }
-          li.appendChild(row);
-          ul.appendChild(li);
-        });
-        document.getElementById('total').textContent = items.length;
+          panel.appendChild(ul);
+          wrap.appendChild(panel);
+        }
+
+        refreshRotationTargets();
       }
 
       function loadTodos() {
@@ -360,17 +419,29 @@
       }
 
       // ---- Rotator: cycle through panels full-width, one at a time.
-      // E-ink flashes on every redraw, so this is deliberately slow. ----
+      // E-ink flashes on every redraw, so this is deliberately slow.
+      // Todo panels are rebuilt on every refresh (page count can change),
+      // so the target list is recomputed rather than captured once. ----
       var ROTATE_MS = 25 * 1000;
-      var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
       var dotsEl = document.getElementById('dots');
-      panels.forEach(function () { dotsEl.appendChild(el('span')); });
-      var dots = Array.prototype.slice.call(dotsEl.children);
+      var panels = [];
+      var dots = [];
       var panelIndex = 0;
 
       function showPanel(i) {
         panels.forEach(function (p, pi) { p.classList.toggle('active', pi === i); });
         dots.forEach(function (d, di) { d.classList.toggle('active', di === i); });
+      }
+
+      function refreshRotationTargets() {
+        var wasActive = panels[panelIndex];
+        panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+        dotsEl.innerHTML = '';
+        panels.forEach(function () { dotsEl.appendChild(el('span')); });
+        dots = Array.prototype.slice.call(dotsEl.children);
+        var idx = panels.indexOf(wasActive);
+        panelIndex = idx >= 0 ? idx : 0;
+        showPanel(panelIndex);
       }
 
       var rotateTimer;
@@ -383,7 +454,7 @@
         rotateTimer = setInterval(nextPanel, ROTATE_MS);
       }
 
-      showPanel(0);
+      refreshRotationTargets();
       startRotation();
 
       // Tap/click anywhere to advance immediately; restart the auto-rotate

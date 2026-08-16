@@ -98,17 +98,19 @@ dashboard still works.
 
 ### Trello setup
 
-Today's Todo panel reads/writes cards on a real Trello board — checking a
-box moves the card to a "Done" list rather than toggling a flag.
+Today's Todo panel is a read-only view of a real Trello board, pulling
+open cards from multiple lists and sorting them: overdue cards first,
+then by list priority (first list in `TRELLO_SOURCE_LISTS` = highest
+priority), then by due date.
 
 1. Get an API key from https://trello.com/app-key.
 2. Generate a never-expiring token: visit
    `https://trello.com/1/authorize?expiration=never&scope=read,write&response_type=token&key=<KEY>&name=eink-todo`,
    approve, and copy the token shown on the page.
 3. Find the list IDs to use (`GET https://api.trello.com/1/boards/<board id>/lists?key=<KEY>&token=<TOKEN>`).
-4. Set env vars: `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_SOURCE_LIST_IDS`
-   (comma-separated — new cards go to the first one; unchecking a done card
-   also returns it there), `TRELLO_DONE_LIST_ID`.
+4. Set env vars: `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_SOURCE_LISTS`
+   (comma-separated `id:Name` pairs, highest priority first — e.g.
+   `idA:Verification,idB:WIP,idC:Input`), `TRELLO_DONE_LIST_ID`.
 
 Without these four vars, `/api/todos` just returns 503.
 
