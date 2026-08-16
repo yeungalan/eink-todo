@@ -299,26 +299,20 @@
         });
       }
 
-      // ---- Train status (from the Keio live feed already served by this app) ----
+      // ---- Train status (Keio's own feed + other operators via /api/lines) ----
       function loadLines() {
-        fetch('/api/state').then(function (r) { return r.json(); }).then(function (st) {
-          var svc = (st && st.service) || {};
-          var rows = [
-            ['京王線', svc.keio],
-            ['井の頭線', svc.inokashira],
-          ];
+        fetch('/api/lines').then(function (r) { return r.json(); }).then(function (lines) {
           var ul = document.getElementById('linesList');
           ul.innerHTML = '';
-          rows.forEach(function (row) {
-            var name = row[0], s = row[1];
-            var icon = (s && s.level === 'normal') ? './img/normal.svg' : './img/adjust.svg';
+          (lines || []).forEach(function (s) {
+            var icon = (s.level === 'normal') ? './img/normal.svg' : './img/adjust.svg';
             var li = el('li');
             var img = el('img', 'marker');
             img.src = icon; img.width = 22; img.height = 22;
             li.appendChild(img);
             li.appendChild(el('div', null,
-              '<div class="line-name">' + name + '</div>' +
-              '<div class="line-state">' + ((s && s.text) || 'Unknown') + '</div>'));
+              '<div class="line-name">' + s.name + '</div>' +
+              '<div class="line-state">' + (s.text || 'Unknown') + '</div>'));
             ul.appendChild(li);
           });
         }).catch(function () {

@@ -44,6 +44,7 @@ func main() {
 	weather := newWeatherCache()
 	calClient := newCalendarClient() // nil if GOOGLE_* env vars are unset
 	trello := newTrelloClient()      // nil if TRELLO_* env vars are unset
+	toei := newToeiCache()           // Toei Shinjuku Line, via ODPT's keyless public mirror
 
 	mux := http.NewServeMux()
 
@@ -57,6 +58,33 @@ func main() {
 			return
 		}
 		json.NewEncoder(w).Encode(st)
+	})
+
+	// /api/lines is a flat, named list for the e-ink dashboard's 運行情報
+	// column — combines the Keio feed (already fetched for /api/state) with
+	// other operators as they're added (currently just Toei Shinjuku).
+	mux.HandleFunc("/api/lines", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		st, err := cache.get()
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		lines := []struct {
+			Name string `json:"name"`
+			LineStatus
+		}{
+			{Name: "京王線", LineStatus: st.Service.Keio},
+			{Name: "井の頭線", LineStatus: st.Service.Inokashira},
+		}
+		if toeiStatus, err := toei.get(); err == nil {
+			lines = append(lines, struct {
+				Name string `json:"name"`
+				LineStatus
+			}{Name: "都営新宿線", LineStatus: *toeiStatus})
+		}
+		json.NewEncoder(w).Encode(lines)
 	})
 
 	mux.HandleFunc("/api/meta", func(w http.ResponseWriter, r *http.Request) {
