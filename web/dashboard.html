@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="en">
+<html lang="ja">
 <head>
   <meta charset="utf-8">
   <!-- Kindle Paperwhite (12th gen, 2024): 7" e-ink, 1264 x 1680 @ 300ppi, portrait -->
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Dashboard</title>
+  <title>ダッシュボード</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='4' fill='%23000'/%3E%3Crect x='6' y='7' width='8' height='8' rx='1.5' fill='none' stroke='%23fff' stroke-width='2'/%3E%3Cpath d='M18 9h9M18 13h9' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M18 20h9M18 24h9' stroke='%23fff' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M6 21l2 2 4-5' fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <style>
     /*
@@ -172,8 +172,8 @@
   <div class="sheet">
 
     <header class="masthead">
-      <h1>DASHBOARD</h1>
-      <p class="updated">Last Updated: <span id="updated">May 20, 2025</span></p>
+      <h1>ダッシュボード</h1>
+      <p class="updated">更新：<span id="updated">&hellip;</span></p>
     </header>
 
     <hr class="rule">
@@ -191,7 +191,7 @@
                   transform="translate(15,17)"
                   fill="#fff" stroke="#000" stroke-width="2.3" stroke-linejoin="round"/>
           </svg>
-          <h2>WEATHER</h2>
+          <h2>天気</h2>
         </div>
         <div class="weather">
           <svg class="big-ico" viewBox="0 0 48 48" aria-hidden="true">
@@ -208,30 +208,30 @@
             <div class="cond" id="wx-cond">&hellip;</div>
           </div>
         </div>
-        <div class="wx-feels">Feels like <span id="wx-feels">&hellip;</span>&deg;C</div>
+        <div class="wx-feels">体感温度 <span id="wx-feels">&hellip;</span>&deg;C</div>
         <div class="wx-grid">
           <div class="wx-stat">
-            <div class="wx-label">HIGH / LOW</div>
+            <div class="wx-label">最高 / 最低</div>
             <div class="wx-value"><span id="wx-high">&hellip;</span>&deg; / <span id="wx-low">&hellip;</span>&deg;</div>
           </div>
           <div class="wx-stat">
-            <div class="wx-label">RAIN CHANCE</div>
+            <div class="wx-label">降水確率</div>
             <div class="wx-value"><span id="wx-precip">&hellip;</span>%</div>
           </div>
           <div class="wx-stat">
-            <div class="wx-label">HUMIDITY</div>
+            <div class="wx-label">湿度</div>
             <div class="wx-value"><span id="wx-humidity">&hellip;</span>%</div>
           </div>
           <div class="wx-stat">
-            <div class="wx-label">WIND</div>
+            <div class="wx-label">風</div>
             <div class="wx-value" id="wx-wind">&hellip;</div>
           </div>
           <div class="wx-stat">
-            <div class="wx-label">UV INDEX</div>
+            <div class="wx-label">UV指数</div>
             <div class="wx-value" id="wx-uv">&hellip;</div>
           </div>
           <div class="wx-stat">
-            <div class="wx-label">SUNRISE / SUNSET</div>
+            <div class="wx-label">日の出 / 日の入り</div>
             <div class="wx-value" id="wx-sun">&hellip;</div>
           </div>
         </div>
@@ -250,7 +250,24 @@
           <h2>運行情報</h2>
         </div>
         <ul class="lines" id="linesList">
-          <li><div class="line-name">Loading&hellip;</div></li>
+          <li><div class="line-name">読み込み中&hellip;</div></li>
+        </ul>
+      </div>
+
+      <!-- Hatagaya next train (derived from the Keio feed above) -->
+      <div class="panel">
+        <div class="panel-head">
+          <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
+            <rect x="12" y="6" width="24" height="26" rx="6" fill="none" stroke="#000" stroke-width="2.5"/>
+            <rect x="16" y="11" width="16" height="9" rx="2" fill="#000"/>
+            <circle cx="19" cy="26" r="2.4" fill="#000"/>
+            <circle cx="29" cy="26" r="2.4" fill="#000"/>
+            <path d="M17 33l-4 8M31 33l4 8" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+          <h2>幡ヶ谷 次の電車</h2>
+        </div>
+        <ul class="lines" id="hatagayaList">
+          <li><div class="line-name">読み込み中&hellip;</div></li>
         </ul>
       </div>
 
@@ -266,10 +283,10 @@
               <rect x="13" y="32" width="4" height="4"/><rect x="22" y="32" width="4" height="4"/><rect x="31" y="32" width="4" height="4"/>
             </g>
           </svg>
-          <h2>TODAY&rsquo;S EVENTS</h2>
+          <h2>今日の予定</h2>
         </div>
         <ul class="events" id="eventsList">
-          <li><span>Loading&hellip;</span></li>
+          <li><span>読み込み中&hellip;</span></li>
         </ul>
       </div>
 
@@ -295,8 +312,8 @@
 
       function setUpdated() {
         document.getElementById('updated').textContent =
-          new Date().toLocaleString(undefined, {
-            year: 'numeric', month: 'short', day: 'numeric',
+          new Date().toLocaleString('ja-JP', {
+            year: 'numeric', month: 'long', day: 'numeric',
             hour: '2-digit', minute: '2-digit'
           });
       }
@@ -316,7 +333,7 @@
           document.getElementById('wx-uv').textContent = w.uvIndex.toFixed(1);
           document.getElementById('wx-sun').textContent = w.sunrise + ' / ' + w.sunset;
         }).catch(function () {
-          document.getElementById('wx-cond').textContent = 'Unavailable';
+          document.getElementById('wx-cond').textContent = '取得できません';
         });
       }
 
@@ -333,11 +350,33 @@
             li.appendChild(img);
             li.appendChild(el('div', null,
               '<div class="line-name">' + s.name + '</div>' +
-              '<div class="line-state">' + (s.text || 'Unknown') + '</div>'));
+              '<div class="line-state">' + (s.text || '不明') + '</div>'));
             ul.appendChild(li);
           });
         }).catch(function () {
-          document.getElementById('linesList').innerHTML = '<li><div class="line-name">Unavailable</div></li>';
+          document.getElementById('linesList').innerHTML = '<li><div class="line-name">取得できません</div></li>';
+        });
+      }
+
+      // ---- Hatagaya next train (derived from the Keio feed — see hatagaya.go) ----
+      function loadHatagaya() {
+        fetch('/api/hatagaya').then(function (r) { return r.json(); }).then(function (nt) {
+          nt = nt || {};
+          var ul = document.getElementById('hatagayaList');
+          ul.innerHTML = '';
+          [['up', '上り'], ['down', '下り']].forEach(function (pair) {
+            var t = nt[pair[0]];
+            var li = el('li');
+            var label = t
+              ? (t.typeName + ' ' + t.destination + '行 &middot; ' + t.status + (t.delayMin > 0 ? '（' + t.delayMin + '分遅れ）' : ''))
+              : '情報なし';
+            li.appendChild(el('div', null,
+              '<div class="line-name">' + pair[1] + '</div>' +
+              '<div class="line-state">' + label + '</div>'));
+            ul.appendChild(li);
+          });
+        }).catch(function () {
+          document.getElementById('hatagayaList').innerHTML = '<li><div class="line-name">取得できません</div></li>';
         });
       }
 
@@ -347,17 +386,17 @@
           var ul = document.getElementById('eventsList');
           ul.innerHTML = '';
           if (!Array.isArray(events) || events.length === 0) {
-            ul.appendChild(el('li', null, '<span>No events today</span>'));
+            ul.appendChild(el('li', null, '<span>本日の予定はありません</span>'));
             return;
           }
           events.forEach(function (ev) {
             var li = el('li');
-            li.appendChild(el('span', 't', ev.allDay ? 'All day' : ev.time));
+            li.appendChild(el('span', 't', ev.allDay ? '終日' : ev.time));
             li.appendChild(el('span', null, ev.title));
             ul.appendChild(li);
           });
         }).catch(function () {
-          document.getElementById('eventsList').innerHTML = '<li><span>Unavailable</span></li>';
+          document.getElementById('eventsList').innerHTML = '<li><span>取得できません</span></li>';
         });
       }
 
@@ -376,16 +415,16 @@
           var panel = el('div', 'panel');
 
           var head = el('div', 'todo-head');
-          head.appendChild(el('h2', null, 'TODAY&rsquo;S TODO'));
+          head.appendChild(el('h2', null, '今日のタスク'));
           var countLabel = pages > 1
-            ? ('Page ' + (p + 1) + ' of ' + pages + ' &middot; ' + items.length + ' tasks')
-            : (items.length + ' tasks');
+            ? (p + 1) + ' / ' + pages + ' ページ &middot; タスク' + items.length + '件'
+            : 'タスク' + items.length + '件';
           head.appendChild(el('div', 'count', countLabel));
           panel.appendChild(head);
 
           var ul = el('ul', 'todo');
           if (chunk.length === 0) {
-            ul.appendChild(el('li', null, '<div class="row"><span class="txt">No tasks</span></div>'));
+            ul.appendChild(el('li', null, '<div class="row"><span class="txt">タスクはありません</span></div>'));
           } else {
             chunk.forEach(function (t) {
               var li = el('li');
@@ -414,6 +453,7 @@
         setUpdated();
         loadWeather();
         loadLines();
+        loadHatagaya();
         loadEvents();
         loadTodos();
       }

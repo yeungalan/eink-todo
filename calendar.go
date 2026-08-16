@@ -133,7 +133,7 @@ func (c *calendarClient) today() ([]CalendarEvent, error) {
 	for _, it := range raw.Items {
 		title := it.Summary
 		if title == "" {
-			title = "(no title)"
+			title = "（タイトルなし）"
 		}
 		if it.Start.DateTime != "" {
 			t, err := time.Parse(time.RFC3339, it.Start.DateTime)

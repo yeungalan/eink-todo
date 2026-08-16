@@ -77,9 +77,11 @@ today's calendar events, and a persistent todo list. It polls these APIs:
 | Endpoint | Backed by |
 |---|---|
 | `GET /api/weather` | [Open-Meteo](https://open-meteo.com) — no API key. Location via `WEATHER_LAT`/`WEATHER_LON` (default: Tokyo). |
+| `GET /api/lines` | 京王線/井の頭線 (same feed as `/api/state`) + 都営新宿線 via ODPT's keyless public mirror + JR山手線 scraped from transit.yahoo.co.jp. |
+| `GET /api/hatagaya` | Next up/down train at 幡ヶ谷station, derived from the Keio feed already fetched for `/api/state` — no extra upstream call. |
 | `GET /api/state` | same Keio/Inokashira feed as the main dashboard (`service.keio`, `service.inokashira`). |
 | `GET /api/events` | Google Calendar, via a long-lived refresh token (see below). Returns `503` if unconfigured. |
-| `GET /api/todos`, `POST /api/todos`, `PATCH /api/todos/{id}`, `DELETE /api/todos/{id}` | A Trello board (see below). Returns `503` if unconfigured. |
+| `GET /api/todos`, `PATCH /api/todos/{id}`, `DELETE /api/todos/{id}` | A Trello board (see below). Returns `503` if unconfigured. |
 
 ### Google Calendar setup
 

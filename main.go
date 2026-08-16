@@ -45,6 +45,7 @@ func main() {
 	calClient := newCalendarClient() // nil if GOOGLE_* env vars are unset
 	trello := newTrelloClient()      // nil if TRELLO_* env vars are unset
 	toei := newToeiCache()           // Toei Shinjuku Line, via ODPT's keyless public mirror
+	yamanote := newYamanoteCache()   // JR Yamanote Line, scraped from Yahoo!路線情報
 
 	mux := http.NewServeMux()
 
@@ -84,7 +85,26 @@ func main() {
 				LineStatus
 			}{Name: "都営新宿線", LineStatus: *toeiStatus})
 		}
+		if yamanoteStatus, err := yamanote.get(); err == nil {
+			lines = append(lines, struct {
+				Name string `json:"name"`
+				LineStatus
+			}{Name: "JR山手線", LineStatus: *yamanoteStatus})
+		}
 		json.NewEncoder(w).Encode(lines)
+	})
+
+	// /api/hatagaya: next up/down train at Hatagaya, derived from the
+	// Keio feed already fetched above — no extra upstream call.
+	mux.HandleFunc("/api/hatagaya", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		st, err := cache.get()
+		if err != nil {
+			w.WriteHeader(http.StatusBadGateway)
+			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		json.NewEncoder(w).Encode(hatagayaNextTrains(st.Trains))
 	})
 
 	mux.HandleFunc("/api/meta", func(w http.ResponseWriter, r *http.Request) {

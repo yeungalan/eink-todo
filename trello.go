@@ -124,7 +124,8 @@ func (c *trelloClient) list() ([]Todo, error) {
 			if c.Due != nil {
 				if due, err := time.Parse(time.RFC3339, *c.Due); err == nil {
 					t.dueAt = due
-					t.Due = due.Local().Format("Jan 2")
+					local := due.Local()
+					t.Due = fmt.Sprintf("%d月%d日", local.Month(), local.Day())
 					t.Overdue = due.Before(now)
 				}
 			}

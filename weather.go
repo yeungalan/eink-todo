@@ -30,8 +30,8 @@ type Weather struct {
 
 // compassDir converts a wind direction in degrees to a 16-point compass label.
 func compassDir(deg float64) string {
-	dirs := []string{"N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-		"S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"}
+	dirs := []string{"北", "北北東", "北東", "東北東", "東", "東南東", "南東", "南南東",
+		"南", "南南西", "南西", "西南西", "西", "西北西", "北西", "北北西"}
 	idx := int((deg/22.5)+0.5) % 16
 	if idx < 0 {
 		idx += 16
@@ -44,27 +44,27 @@ func compassDir(deg float64) string {
 func wmoCondition(code int) string {
 	switch {
 	case code == 0:
-		return "Clear"
+		return "快晴"
 	case code <= 2:
-		return "Mostly Sunny"
+		return "ほぼ晴れ"
 	case code == 3:
-		return "Cloudy"
+		return "曇り"
 	case code == 45 || code == 48:
-		return "Fog"
+		return "霧"
 	case code >= 51 && code <= 57:
-		return "Drizzle"
+		return "霧雨"
 	case code >= 61 && code <= 67:
-		return "Rain"
+		return "雨"
 	case code >= 71 && code <= 77:
-		return "Snow"
+		return "雪"
 	case code >= 80 && code <= 82:
-		return "Showers"
+		return "にわか雨"
 	case code >= 85 && code <= 86:
-		return "Snow Showers"
+		return "にわか雪"
 	case code >= 95:
-		return "Thunderstorm"
+		return "雷雨"
 	default:
-		return "Unknown"
+		return "不明"
 	}
 }
 
@@ -190,13 +190,13 @@ func (c *weatherCache) fetch() (*Weather, error) {
 	return w, nil
 }
 
-// formatClock turns Open-Meteo's "2026-08-17T05:03" into "5:03 AM".
+// formatClock turns Open-Meteo's "2026-08-17T05:03" into 24h "5:03".
 func formatClock(iso string) string {
 	t, err := time.Parse("2006-01-02T15:04", iso)
 	if err != nil {
 		return ""
 	}
-	return t.Format("3:04 PM")
+	return t.Format("15:04")
 }
 
 func round1(f float64) float64 {
