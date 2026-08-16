@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -35,13 +36,21 @@ type namedList struct {
 // sourceLists (Verification, WIP, Researching, Waiting, Input, in priority
 // order) are today's open todos; checking one off moves the card to
 // doneListID. It talks straight to the Trello REST API using a personal API
-// key + token (no OAuth dance).
+// key + token (no OAuth dance). Fetching a list means one Trello API call
+// per source list, so the result is cached briefly (see list()) — without
+// it, every dashboard poll (and every tap) would fan out to 5 upstream
+// calls each.
 type trelloClient struct {
 	apiKey      string
 	token       string
 	sourceLists []namedList // ordered highest priority first
 	doneListID  string
 	http        *http.Client
+	cacheTTL    time.Duration
+
+	cacheMu      sync.Mutex
+	cacheValue   []Todo
+	cacheFetched time.Time
 }
 
 func newTrelloClient() *trelloClient {
@@ -66,6 +75,7 @@ func newTrelloClient() *trelloClient {
 		sourceLists: lists,
 		doneListID:  done,
 		http:        &http.Client{Timeout: 8 * time.Second},
+		cacheTTL:    90 * time.Second,
 	}
 }
 
@@ -99,12 +109,52 @@ func (c *trelloClient) do(method, path string, q url.Values) ([]byte, error) {
 	return body, nil
 }
 
-// list returns today's open todos: every card currently in the source
-// lists, sorted so overdue cards come first, then cards with a due date
-// (real or, for Verification/WIP, an assumed one-week default) ahead of
-// undated cards, then by list priority (Verification, WIP, Researching,
-// Waiting, Input), then by due date ascending.
+// list returns cached todos, refetching from Trello only once per cacheTTL
+// so repeated client polls (and rapid taps) don't each fan out to one
+// Trello API call per source list.
 func (c *trelloClient) list() ([]Todo, error) {
+	c.cacheMu.Lock()
+	if c.cacheValue != nil && time.Since(c.cacheFetched) < c.cacheTTL {
+		v := c.cacheValue
+		c.cacheMu.Unlock()
+		return v, nil
+	}
+	c.cacheMu.Unlock()
+
+	todos, err := c.fetchList()
+	if err != nil {
+		c.cacheMu.Lock()
+		if c.cacheValue != nil {
+			v := c.cacheValue
+			c.cacheMu.Unlock()
+			return v, nil // serve stale on upstream error
+		}
+		c.cacheMu.Unlock()
+		return nil, err
+	}
+
+	c.cacheMu.Lock()
+	c.cacheValue = todos
+	c.cacheFetched = time.Now()
+	c.cacheMu.Unlock()
+	return todos, nil
+}
+
+// invalidateCache forces the next list() call to hit Trello again — used
+// after a mutation (setDone/delete) so the change is visible immediately
+// rather than waiting out cacheTTL.
+func (c *trelloClient) invalidateCache() {
+	c.cacheMu.Lock()
+	c.cacheValue = nil
+	c.cacheMu.Unlock()
+}
+
+// fetchList hits Trello for every card currently in the source lists,
+// sorted so overdue cards come first, then cards with a due date (real or,
+// for Verification/WIP, an assumed one-week default) ahead of undated
+// cards, then by list priority (Verification, WIP, Researching, Waiting,
+// Input), then by due date ascending.
+func (c *trelloClient) fetchList() ([]Todo, error) {
 	out := []Todo{}
 	now := time.Now()
 	for _, l := range c.sourceLists {
@@ -125,8 +175,7 @@ func (c *trelloClient) list() ([]Todo, error) {
 			if c.Due != nil {
 				if due, err := time.Parse(time.RFC3339, *c.Due); err == nil {
 					t.dueAt = due
-					local := due.Local()
-					t.Due = fmt.Sprintf("%d月%d日", local.Month(), local.Day())
+					t.Due = relativeDate(due.Local(), now)
 					t.Overdue = due.Before(now)
 				}
 			} else if l.Priority < 2 {
@@ -169,11 +218,42 @@ func (c *trelloClient) setDone(cardID string, done bool) error {
 		target = c.sourceLists[len(c.sourceLists)-1].ID
 	}
 	_, err := c.do(http.MethodPut, "/cards/"+cardID, url.Values{"idList": {target}})
+	if err == nil {
+		c.invalidateCache()
+	}
 	return err
 }
 
 // delete archives (closes) the card rather than permanently deleting it.
 func (c *trelloClient) delete(cardID string) error {
 	_, err := c.do(http.MethodPut, "/cards/"+cardID, url.Values{"closed": {"true"}})
+	if err == nil {
+		c.invalidateCache()
+	}
 	return err
+}
+
+// relativeDate renders a due date the way day.js's relative-time plugin
+// would (moment's modern, lighter alternative): 今日/明日/昨日 for the
+// adjacent days, "N日後"/"N日前" within a week, and an absolute date
+// beyond that where a relative label stops being useful at a glance.
+func relativeDate(due, now time.Time) string {
+	dueDay := time.Date(due.Year(), due.Month(), due.Day(), 0, 0, 0, 0, due.Location())
+	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	days := int(dueDay.Sub(today).Hours() / 24)
+
+	switch {
+	case days == 0:
+		return "今日"
+	case days == 1:
+		return "明日"
+	case days == -1:
+		return "昨日"
+	case days > 1 && days <= 7:
+		return fmt.Sprintf("%d日後", days)
+	case days < -1 && days >= -7:
+		return fmt.Sprintf("%d日前", -days)
+	default:
+		return fmt.Sprintf("%d月%d日", due.Month(), due.Day())
+	}
 }
