@@ -64,14 +64,46 @@ go run .
 # override the port with:  ADDR=:9000 go run .
 ```
 
-Requires Go 1.25+. The only dependency is `golang.org/x/text` (Unicode NFKC
-folding, so feed station names using CJK compatibility ideographs — e.g.
-塚 U+FA10 — match the built-in station list).
+Requires Go 1.25+. Dependencies: `golang.org/x/text` (Unicode NFKC folding, so
+feed station names using CJK compatibility ideographs — e.g. 塚 U+FA10 — match
+the built-in station list) and `modernc.org/sqlite` (pure-Go, no cgo/gcc
+needed) for the todo store.
+
+## `web/dashboard.html` — e-ink panel
+
+A separate, static-first page (`/dashboard.html`) tuned for e-ink displays
+(tested against a Kindle Paperwhite browser): weather, live train status,
+today's calendar events, and a persistent todo list. It polls these APIs:
+
+| Endpoint | Backed by |
+|---|---|
+| `GET /api/weather` | [Open-Meteo](https://open-meteo.com) — no API key. Location via `WEATHER_LAT`/`WEATHER_LON` (default: Tokyo). |
+| `GET /api/state` | same Keio/Inokashira feed as the main dashboard (`service.keio`, `service.inokashira`). |
+| `GET /api/events` | Google Calendar, via a long-lived refresh token (see below). Returns `503` if unconfigured. |
+| `GET /api/todos`, `POST /api/todos`, `PATCH /api/todos/{id}`, `DELETE /api/todos/{id}` | SQLite file at `TODO_DB_PATH` (default `todos.db` in the working dir). |
+
+### Google Calendar setup
+
+The server needs its own OAuth client (it can't reuse a browser session):
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials), enable the Calendar API and create an OAuth client of type **Desktop app**. Note the Client ID + Secret.
+2. Do a one-time manual consent flow to mint a refresh token:
+   - Visit `https://accounts.google.com/o/oauth2/v2/auth?client_id=<ID>&redirect_uri=http://localhost&response_type=code&scope=https://www.googleapis.com/auth/calendar.readonly&access_type=offline&prompt=consent`
+   - Approve, then copy the `code` param from the (failed-to-load) `localhost` redirect URL.
+   - Exchange it: `curl -X POST https://oauth2.googleapis.com/token -d client_id=<ID> -d client_secret=<SECRET> -d code=<CODE> -d grant_type=authorization_code -d redirect_uri=http://localhost`
+   - Save the resulting `refresh_token`.
+3. Set env vars for the server: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` (optionally `GOOGLE_CALENDAR_ID`, default `primary`).
+
+Without these three vars, `/api/events` just returns 503 — the rest of the
+dashboard still works.
 
 ## Layout
 
 ```
 main.go        HTTP server, embeds web/, /api/state + /api/meta, request coalescing
+weather.go     /api/weather — Open-Meteo client with a cache
+calendar.go    /api/events — Google Calendar client (refresh-token auth)
+todos.go       /api/todos — SQLite-backed CRUD store
 feed.go        upstream client, config loading, feed → normalized State
 network.go     line/branch topology + section→position resolver
 types.go       raw feed structs + normalized output structs

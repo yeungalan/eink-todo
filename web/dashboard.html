@@ -150,6 +150,34 @@
     .box .tick { width: 30px; height: 30px; visibility: hidden; }
     .todo input:checked + .box .tick { visibility: visible; }
 
+    /* ---------- Add-task form ---------- */
+    .todo-add {
+      display: flex;
+      gap: 12px;
+      margin-top: 18px;
+    }
+    .todo-add input {
+      flex: 1 1 auto;
+      font-size: 20px;
+      font-family: inherit;
+      border: 2px solid var(--line);
+      border-radius: 4px;
+      padding: 10px 12px;
+      background: var(--paper);
+      color: var(--ink);
+    }
+    .todo-add button {
+      font-size: 18px;
+      font-weight: 800;
+      font-family: inherit;
+      border: 2px solid var(--line);
+      border-radius: 4px;
+      background: var(--ink);
+      color: var(--paper);
+      padding: 0 22px;
+      cursor: pointer;
+    }
+
     /* Fill remaining space so the frame reaches the bottom of the panel. */
     .spacer { flex: 1 1 auto; }
 
@@ -195,12 +223,12 @@
                   fill="#fff" stroke="#000" stroke-width="2.1" stroke-linejoin="round"/>
           </svg>
           <div>
-            <div class="temp">28&deg;C</div>
-            <div class="cond">Sunny</div>
+            <div class="temp"><span id="wx-temp">&hellip;</span>&deg;C</div>
+            <div class="cond" id="wx-cond">&hellip;</div>
           </div>
         </div>
-        <div class="hilo">H:31&deg;&nbsp;&nbsp;L:25&deg;</div>
-        <div class="extra">Rain 5%&nbsp;&nbsp;&bull;&nbsp;&nbsp;Humidity 68%</div>
+        <div class="hilo">H:<span id="wx-high">&hellip;</span>&deg;&nbsp;&nbsp;L:<span id="wx-low">&hellip;</span>&deg;</div>
+        <div class="extra">Rain <span id="wx-precip">&hellip;</span>%&nbsp;&nbsp;&bull;&nbsp;&nbsp;Humidity <span id="wx-humidity">&hellip;</span>%</div>
       </div>
 
       <!-- Train status -->
@@ -215,19 +243,8 @@
           </svg>
           <h2>運行情報</h2>
         </div>
-        <ul class="lines">
-          <li>
-            <img class="marker" src="./img/info.svg" width="32" height="32">
-            <div><div class="line-name">JR 山手線</div><div class="line-state">平常運転</div></div>
-          </li>
-          <li>
-            <img class="marker" src="./img/normal.svg" width="32" height="32">
-            <div><div class="line-name">都営新宿線</div><div class="line-state">運転見合わせ</div></div>
-          </li>
-          <li>
-            <img class="marker" src="./img/adjust.svg" width="32" height="32">
-            <div><div class="line-name">京王線</div><div class="line-state">運転見合わせ</div></div>
-          </li>
+        <ul class="lines" id="linesList">
+          <li><div class="line-name">Loading&hellip;</div></li>
         </ul>
       </div>
 
@@ -245,11 +262,8 @@
           </svg>
           <h2>TODAY&rsquo;S EVENTS</h2>
         </div>
-        <ul class="events">
-          <li><span class="t">09:00</span><span>Team Meeting</span></li>
-          <li><span class="t">14:00</span><span>Dentist</span></li>
-          <li><span class="t">19:00</span><span>Dinner</span></li>
-          <li><span class="t">21:00</span><span>Read / Relax</span></li>
+        <ul class="events" id="eventsList">
+          <li><span>Loading&hellip;</span></li>
         </ul>
       </div>
     </section>
@@ -262,37 +276,160 @@
         <div class="count"><span id="done">3</span> / <span id="total">8</span> completed</div>
       </div>
 
-      <ul class="todo" id="todoList">
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Finish AWS presentation</span></label></li>
-        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Buy groceries</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Call bank</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Japanese homework</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Read 20 pages</span></label></li>
-        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Workout</span></label></li>
-        <li><label><input type="checkbox"><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Plan weekend trip</span></label></li>
-        <li><label><input type="checkbox" checked><span class="box"><svg class="tick" viewBox="0 0 32 32" aria-hidden="true"><path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></span><span class="txt">Review pull requests</span></label></li>
-      </ul>
+      <ul class="todo" id="todoList"></ul>
+
+      <form id="todoAddForm" class="todo-add">
+        <input type="text" id="todoAddInput" placeholder="Add a task&hellip;" autocomplete="off">
+        <button type="submit">Add</button>
+      </form>
     </section>
 
     <div class="spacer"></div>
   </div>
 
   <script>
-    // Keep the "done / total" counter honest as boxes are tapped. The header
-    // date is left as static markup so the panel matches the reference design
-    // and still renders correctly if scripting is disabled in the Kindle browser.
     (function () {
-      var boxes = Array.prototype.slice.call(
-        document.querySelectorAll('#todoList input[type=checkbox]'));
-      var done = document.getElementById('done');
-      var total = document.getElementById('total');
-      total.textContent = boxes.length;
+      var REFRESH_MS = 5 * 60 * 1000; // e-ink panel: no need to poll fast
 
-      function recount() {
-        done.textContent = boxes.filter(function (b) { return b.checked; }).length;
+      function el(tag, cls, html) {
+        var e = document.createElement(tag);
+        if (cls) e.className = cls;
+        if (html !== undefined) e.innerHTML = html;
+        return e;
       }
-      boxes.forEach(function (b) { b.addEventListener('change', recount); });
-      recount();
+
+      function setUpdated() {
+        document.getElementById('updated').textContent =
+          new Date().toLocaleString(undefined, {
+            year: 'numeric', month: 'short', day: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+          });
+      }
+
+      // ---- Weather ----
+      function loadWeather() {
+        fetch('/api/weather').then(function (r) { return r.json(); }).then(function (w) {
+          if (w.error) throw new Error(w.error);
+          document.getElementById('wx-temp').textContent = Math.round(w.tempC);
+          document.getElementById('wx-cond').textContent = w.condition;
+          document.getElementById('wx-high').textContent = Math.round(w.highC);
+          document.getElementById('wx-low').textContent = Math.round(w.lowC);
+          document.getElementById('wx-precip').textContent = w.precipPct;
+          document.getElementById('wx-humidity').textContent = w.humidityPct;
+        }).catch(function () {
+          document.getElementById('wx-cond').textContent = 'Unavailable';
+        });
+      }
+
+      // ---- Train status (from the Keio live feed already served by this app) ----
+      function loadLines() {
+        fetch('/api/state').then(function (r) { return r.json(); }).then(function (st) {
+          var svc = (st && st.service) || {};
+          var rows = [
+            ['京王線', svc.keio],
+            ['井の頭線', svc.inokashira],
+          ];
+          var ul = document.getElementById('linesList');
+          ul.innerHTML = '';
+          rows.forEach(function (row) {
+            var name = row[0], s = row[1];
+            var icon = (s && s.level === 'normal') ? './img/normal.svg' : './img/adjust.svg';
+            var li = el('li');
+            var img = el('img', 'marker');
+            img.src = icon; img.width = 32; img.height = 32;
+            li.appendChild(img);
+            li.appendChild(el('div', null,
+              '<div class="line-name">' + name + '</div>' +
+              '<div class="line-state">' + ((s && s.text) || 'Unknown') + '</div>'));
+            ul.appendChild(li);
+          });
+        }).catch(function () {
+          document.getElementById('linesList').innerHTML = '<li><div class="line-name">Unavailable</div></li>';
+        });
+      }
+
+      // ---- Today's events (Google Calendar) ----
+      function loadEvents() {
+        fetch('/api/events').then(function (r) { return r.json(); }).then(function (events) {
+          var ul = document.getElementById('eventsList');
+          ul.innerHTML = '';
+          if (!Array.isArray(events) || events.length === 0) {
+            ul.appendChild(el('li', null, '<span>No events today</span>'));
+            return;
+          }
+          events.forEach(function (ev) {
+            var li = el('li');
+            li.appendChild(el('span', 't', ev.allDay ? 'All day' : ev.time));
+            li.appendChild(el('span', null, ev.title));
+            ul.appendChild(li);
+          });
+        }).catch(function () {
+          document.getElementById('eventsList').innerHTML = '<li><span>Unavailable</span></li>';
+        });
+      }
+
+      // ---- Todos (persisted via SQLite-backed API) ----
+      function tickSvg() {
+        return '<svg class="tick" viewBox="0 0 32 32" aria-hidden="true">' +
+          '<path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" ' +
+          'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      }
+
+      function renderTodos(items) {
+        var ul = document.getElementById('todoList');
+        ul.innerHTML = '';
+        items.forEach(function (t) {
+          var li = el('li');
+          var label = el('label');
+          var input = el('input');
+          input.type = 'checkbox';
+          input.checked = !!t.done;
+          input.addEventListener('change', function () {
+            fetch('/api/todos/' + t.id, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ done: input.checked })
+            }).then(loadTodos);
+          });
+          label.appendChild(input);
+          label.appendChild(el('span', 'box', tickSvg()));
+          label.appendChild(el('span', 'txt', t.text));
+          li.appendChild(label);
+          ul.appendChild(li);
+        });
+        document.getElementById('total').textContent = items.length;
+        document.getElementById('done').textContent = items.filter(function (t) { return t.done; }).length;
+      }
+
+      function loadTodos() {
+        return fetch('/api/todos').then(function (r) { return r.json(); }).then(renderTodos);
+      }
+
+      document.getElementById('todoAddForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var input = document.getElementById('todoAddInput');
+        var text = input.value.trim();
+        if (!text) return;
+        fetch('/api/todos', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: text })
+        }).then(function () {
+          input.value = '';
+          return loadTodos();
+        });
+      });
+
+      function loadAll() {
+        setUpdated();
+        loadWeather();
+        loadLines();
+        loadEvents();
+        loadTodos();
+      }
+
+      loadAll();
+      setInterval(loadAll, REFRESH_MS);
     })();
   </script>
 </body>
