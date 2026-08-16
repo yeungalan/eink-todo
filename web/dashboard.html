@@ -444,8 +444,18 @@
         refreshRotationTargets();
       }
 
+      // renderTodos rebuilds every todo-page .panel from scratch, which
+      // would knock out whatever panel is currently active (e.g. right
+      // after a tap navigates into a todo page). Skip the rebuild when the
+      // data hasn't actually changed so navigation isn't disturbed.
+      var lastTodosJSON = null;
       function loadTodos() {
-        return fetch('/api/todos').then(function (r) { return r.json(); }).then(renderTodos);
+        return fetch('/api/todos').then(function (r) { return r.json(); }).then(function (items) {
+          var json = JSON.stringify(items);
+          if (json === lastTodosJSON) return;
+          lastTodosJSON = json;
+          renderTodos(items);
+        });
       }
 
       function loadAll() {
