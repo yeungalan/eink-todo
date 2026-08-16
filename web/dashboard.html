@@ -373,11 +373,25 @@
         dots.forEach(function (d, di) { d.classList.toggle('active', di === i); });
       }
 
-      showPanel(0);
-      setInterval(function () {
+      var rotateTimer;
+      function nextPanel() {
         panelIndex = (panelIndex + 1) % panels.length;
         showPanel(panelIndex);
-      }, ROTATE_MS);
+      }
+      function startRotation() {
+        clearInterval(rotateTimer);
+        rotateTimer = setInterval(nextPanel, ROTATE_MS);
+      }
+
+      showPanel(0);
+      startRotation();
+
+      // Tap/click anywhere to advance immediately; restart the auto-rotate
+      // timer from there so a manual tap doesn't get instantly overridden.
+      document.body.addEventListener('click', function () {
+        nextPanel();
+        startRotation();
+      });
 
       loadAll();
       setInterval(loadAll, REFRESH_MS);
