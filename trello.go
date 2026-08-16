@@ -234,26 +234,39 @@ func (c *trelloClient) delete(cardID string) error {
 }
 
 // relativeDate renders a due date the way day.js's relative-time plugin
-// would (moment's modern, lighter alternative): 今日/明日/昨日 for the
-// adjacent days, "N日後"/"N日前" within a week, and an absolute date
-// beyond that where a relative label stops being useful at a glance.
+// would (moment's modern, lighter alternative) — fully relative, no
+// absolute-date fallback: 今日/明日/昨日 for the adjacent days, then days,
+// weeks, months, or years out as the gap grows, each rounded to the
+// nearest whole unit.
 func relativeDate(due, now time.Time) string {
 	dueDay := time.Date(due.Year(), due.Month(), due.Day(), 0, 0, 0, 0, due.Location())
 	today := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
 	days := int(dueDay.Sub(today).Hours() / 24)
 
-	switch {
-	case days == 0:
-		return "今日"
-	case days == 1:
-		return "明日"
-	case days == -1:
-		return "昨日"
-	case days > 1 && days <= 7:
-		return fmt.Sprintf("%d日後", days)
-	case days < -1 && days >= -7:
-		return fmt.Sprintf("%d日前", -days)
-	default:
-		return fmt.Sprintf("%d月%d日", due.Month(), due.Day())
+	n, suffix := days, "後"
+	if days < 0 {
+		n, suffix = -days, "前"
 	}
+
+	switch {
+	case n == 0:
+		return "今日"
+	case n == 1:
+		if days > 0 {
+			return "明日"
+		}
+		return "昨日"
+	case n < 7:
+		return fmt.Sprintf("%d日%s", n, suffix)
+	case n < 30:
+		return fmt.Sprintf("%d週間%s", roundDiv(n, 7), suffix)
+	case n < 365:
+		return fmt.Sprintf("%dヶ月%s", roundDiv(n, 30), suffix)
+	default:
+		return fmt.Sprintf("%d年%s", roundDiv(n, 365), suffix)
+	}
+}
+
+func roundDiv(a, b int) int {
+	return (a + b/2) / b
 }
