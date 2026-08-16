@@ -149,11 +149,12 @@ func (c *trelloClient) invalidateCache() {
 	c.cacheMu.Unlock()
 }
 
-// fetchList hits Trello for every card currently in the source lists,
-// sorted so overdue cards come first, then cards with a due date (real or,
-// for Verification/WIP, an assumed one-week default) ahead of undated
-// cards, then by list priority (Verification, WIP, Researching, Waiting,
-// Input), then by due date ascending.
+// fetchList hits Trello for every card currently in the source lists.
+// Date outranks list: cards with a due date (real or, for Verification/
+// WIP, an assumed one-week default) sort first, in pure chronological
+// order — most overdue through furthest-out. Undated cards trail behind,
+// ordered by list priority (Verification, WIP, Researching, Waiting,
+// Input).
 func (c *trelloClient) fetchList() ([]Todo, error) {
 	out := []Todo{}
 	now := time.Now()
@@ -192,20 +193,16 @@ func (c *trelloClient) fetchList() ([]Todo, error) {
 
 	sort.SliceStable(out, func(i, j int) bool {
 		a, b := out[i], out[j]
-		if a.Overdue != b.Overdue {
-			return a.Overdue // overdue cards first, regardless of list
-		}
 		aHas, bHas := !a.dueAt.IsZero(), !b.dueAt.IsZero()
 		if aHas != bHas {
-			return aHas // cards with a due date (real or assumed) sort before those without
+			return aHas // dated cards (real or assumed) sort before undated ones
 		}
-		if a.listPriority != b.listPriority {
-			return a.listPriority < b.listPriority // Verification, WIP, Researching, Waiting, Input
+		if aHas {
+			// Pure chronological order: date outranks list — most overdue
+			// first, through soonest-due, out to furthest-due.
+			return a.dueAt.Before(b.dueAt)
 		}
-		if !aHas {
-			return false // preserve original order among no-due-date cards
-		}
-		return a.dueAt.Before(b.dueAt)
+		return a.listPriority < b.listPriority // undated: fall back to list priority
 	})
 	return out, nil
 }
