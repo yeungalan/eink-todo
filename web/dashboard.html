@@ -17,7 +17,6 @@
       --paper: #fff;
       --line: #000;
       --hair: #9a9a9a;      /* faint row dividers — dithers to a light dot pattern */
-      --frame: 6px;
       --pad: 30px;
     }
 
@@ -37,7 +36,6 @@
       max-width: 780px;
       margin: 0 auto;
       min-height: 100vh;
-      border: var(--frame) solid var(--line);
       padding: var(--pad) var(--pad) 20px;
       display: flex;
       flex-direction: column;
@@ -302,6 +300,7 @@
   <script>
     (function () {
       var REFRESH_MS = 5 * 60 * 1000; // e-ink panel: no need to poll fast
+      var TODO_REFRESH_MS = 30 * 60 * 1000; // Trello: refresh on its own slower cadence, or on tap
 
       function el(tag, cls, html) {
         var e = document.createElement(tag);
@@ -455,7 +454,6 @@
         loadLines();
         loadHatagaya();
         loadEvents();
-        loadTodos();
       }
 
       // ---- Rotator: cycle through panels full-width, one at a time.
@@ -497,15 +495,20 @@
       refreshRotationTargets();
       startRotation();
 
-      // Tap/click anywhere to advance immediately; restart the auto-rotate
-      // timer from there so a manual tap doesn't get instantly overridden.
+      // Tap/click anywhere to advance immediately, restart the auto-rotate
+      // timer from there, and force a fresh Trello pull (so checking a card
+      // off on your phone shows up right away instead of waiting 30 min).
       document.body.addEventListener('click', function () {
         nextPanel();
         startRotation();
+        loadTodos();
       });
 
       loadAll();
       setInterval(loadAll, REFRESH_MS);
+
+      loadTodos();
+      setInterval(loadTodos, TODO_REFRESH_MS);
     })();
   </script>
 </body>

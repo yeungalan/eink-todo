@@ -100,9 +100,10 @@ func (c *trelloClient) do(method, path string, q url.Values) ([]byte, error) {
 }
 
 // list returns today's open todos: every card currently in the source
-// lists, sorted so overdue cards come first, then by list priority
-// (Verification, WIP, Researching, Waiting, Input), then by due date
-// (cards with no due date sort last within their list).
+// lists, sorted so overdue cards come first, then cards with a due date
+// (real or, for Verification/WIP, an assumed one-week default) ahead of
+// undated cards, then by list priority (Verification, WIP, Researching,
+// Waiting, Input), then by due date ascending.
 func (c *trelloClient) list() ([]Todo, error) {
 	out := []Todo{}
 	now := time.Now()
@@ -128,6 +129,13 @@ func (c *trelloClient) list() ([]Todo, error) {
 					t.Due = fmt.Sprintf("%d月%d日", local.Month(), local.Day())
 					t.Overdue = due.Before(now)
 				}
+			} else if l.Priority < 2 {
+				// Verification/WIP (the two highest-priority lists) are
+				// assumed due in a week when no explicit deadline is set,
+				// so they still surface ahead of undated backlog items —
+				// this is sort-only, not a real due date, so it's not
+				// shown on the card and never counts as overdue.
+				t.dueAt = now.AddDate(0, 0, 7)
 			}
 			out = append(out, t)
 		}
@@ -138,12 +146,12 @@ func (c *trelloClient) list() ([]Todo, error) {
 		if a.Overdue != b.Overdue {
 			return a.Overdue // overdue cards first, regardless of list
 		}
-		if a.listPriority != b.listPriority {
-			return a.listPriority < b.listPriority // Verification, WIP, Researching, Waiting, Input
-		}
 		aHas, bHas := !a.dueAt.IsZero(), !b.dueAt.IsZero()
 		if aHas != bHas {
-			return aHas // cards with a due date sort before those without
+			return aHas // cards with a due date (real or assumed) sort before those without
+		}
+		if a.listPriority != b.listPriority {
+			return a.listPriority < b.listPriority // Verification, WIP, Researching, Waiting, Input
 		}
 		if !aHas {
 			return false // preserve original order among no-due-date cards
