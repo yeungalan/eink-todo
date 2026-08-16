@@ -64,10 +64,9 @@ go run .
 # override the port with:  ADDR=:9000 go run .
 ```
 
-Requires Go 1.25+. Dependencies: `golang.org/x/text` (Unicode NFKC folding, so
-feed station names using CJK compatibility ideographs — e.g. 塚 U+FA10 — match
-the built-in station list) and `modernc.org/sqlite` (pure-Go, no cgo/gcc
-needed) for the todo store.
+Requires Go 1.25+. The only dependency is `golang.org/x/text` (Unicode NFKC
+folding, so feed station names using CJK compatibility ideographs — e.g.
+塚 U+FA10 — match the built-in station list).
 
 ## `web/dashboard.html` — e-ink panel
 
@@ -80,7 +79,7 @@ today's calendar events, and a persistent todo list. It polls these APIs:
 | `GET /api/weather` | [Open-Meteo](https://open-meteo.com) — no API key. Location via `WEATHER_LAT`/`WEATHER_LON` (default: Tokyo). |
 | `GET /api/state` | same Keio/Inokashira feed as the main dashboard (`service.keio`, `service.inokashira`). |
 | `GET /api/events` | Google Calendar, via a long-lived refresh token (see below). Returns `503` if unconfigured. |
-| `GET /api/todos`, `POST /api/todos`, `PATCH /api/todos/{id}`, `DELETE /api/todos/{id}` | SQLite file at `TODO_DB_PATH` (default `todos.db` in the working dir). |
+| `GET /api/todos`, `POST /api/todos`, `PATCH /api/todos/{id}`, `DELETE /api/todos/{id}` | A Trello board (see below). Returns `503` if unconfigured. |
 
 ### Google Calendar setup
 
@@ -97,13 +96,29 @@ The server needs its own OAuth client (it can't reuse a browser session):
 Without these three vars, `/api/events` just returns 503 — the rest of the
 dashboard still works.
 
+### Trello setup
+
+Today's Todo panel reads/writes cards on a real Trello board — checking a
+box moves the card to a "Done" list rather than toggling a flag.
+
+1. Get an API key from https://trello.com/app-key.
+2. Generate a never-expiring token: visit
+   `https://trello.com/1/authorize?expiration=never&scope=read,write&response_type=token&key=<KEY>&name=eink-todo`,
+   approve, and copy the token shown on the page.
+3. Find the list IDs to use (`GET https://api.trello.com/1/boards/<board id>/lists?key=<KEY>&token=<TOKEN>`).
+4. Set env vars: `TRELLO_API_KEY`, `TRELLO_TOKEN`, `TRELLO_SOURCE_LIST_IDS`
+   (comma-separated — new cards go to the first one; unchecking a done card
+   also returns it there), `TRELLO_DONE_LIST_ID`.
+
+Without these four vars, `/api/todos` just returns 503.
+
 ## Layout
 
 ```
 main.go        HTTP server, embeds web/, /api/state + /api/meta, request coalescing
 weather.go     /api/weather — Open-Meteo client with a cache
 calendar.go    /api/events — Google Calendar client (refresh-token auth)
-todos.go       /api/todos — SQLite-backed CRUD store
+trello.go      /api/todos — Trello board client (API key + token auth)
 feed.go        upstream client, config loading, feed → normalized State
 network.go     line/branch topology + section→position resolver
 types.go       raw feed structs + normalized output structs

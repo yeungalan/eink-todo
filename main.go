@@ -12,7 +12,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -45,15 +44,7 @@ func main() {
 
 	weather := newWeatherCache()
 	calClient := newCalendarClient() // nil if GOOGLE_* env vars are unset
-
-	todoPath := os.Getenv("TODO_DB_PATH")
-	if todoPath == "" {
-		todoPath = "todos.db"
-	}
-	todos, err := newTodoStore(todoPath)
-	if err != nil {
-		log.Fatalf("open todo store: %v", err)
-	}
+	trello := newTrelloClient()      // nil if TRELLO_* env vars are unset
 
 	mux := http.NewServeMux()
 
@@ -106,10 +97,15 @@ func main() {
 	})
 
 	mux.HandleFunc("GET /api/todos", func(w http.ResponseWriter, r *http.Request) {
-		list, err := todos.list()
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if trello == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{"error": "trello not configured"})
+			return
+		}
+		list, err := trello.list()
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadGateway)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
@@ -117,18 +113,23 @@ func main() {
 	})
 
 	mux.HandleFunc("POST /api/todos", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if trello == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{"error": "trello not configured"})
+			return
+		}
 		var body struct {
 			Text string `json:"text"`
 		}
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		if err := json.NewDecoder(r.Body).Decode(&body); err != nil || strings.TrimSpace(body.Text) == "" {
 			w.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(w).Encode(map[string]string{"error": "text is required"})
 			return
 		}
-		t, err := todos.create(strings.TrimSpace(body.Text))
+		t, err := trello.create(strings.TrimSpace(body.Text))
 		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(http.StatusBadGateway)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
@@ -138,12 +139,12 @@ func main() {
 
 	mux.HandleFunc("PATCH /api/todos/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid id"})
+		if trello == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{"error": "trello not configured"})
 			return
 		}
+		id := r.PathValue("id")
 		var body struct {
 			Done bool `json:"done"`
 		}
@@ -152,8 +153,8 @@ func main() {
 			json.NewEncoder(w).Encode(map[string]string{"error": "invalid body"})
 			return
 		}
-		if err := todos.setDone(id, body.Done); err != nil {
-			w.WriteHeader(http.StatusNotFound)
+		if err := trello.setDone(id, body.Done); err != nil {
+			w.WriteHeader(http.StatusBadGateway)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
@@ -162,14 +163,13 @@ func main() {
 
 	mux.HandleFunc("DELETE /api/todos/{id}", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		id, err := strconv.ParseInt(r.PathValue("id"), 10, 64)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(w).Encode(map[string]string{"error": "invalid id"})
+		if trello == nil {
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(map[string]string{"error": "trello not configured"})
 			return
 		}
-		if err := todos.delete(id); err != nil {
-			w.WriteHeader(http.StatusNotFound)
+		if err := trello.delete(r.PathValue("id")); err != nil {
+			w.WriteHeader(http.StatusBadGateway)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
