@@ -150,33 +150,16 @@
     .box .tick { width: 30px; height: 30px; visibility: hidden; }
     .todo input:checked + .box .tick { visibility: visible; }
 
-    /* ---------- Add-task form ---------- */
-    .todo-add {
-      display: flex;
-      gap: 12px;
-      margin-top: 18px;
-    }
-    .todo-add input {
-      flex: 1 1 auto;
-      font-size: 20px;
-      font-family: inherit;
-      border: 2px solid var(--line);
-      border-radius: 4px;
-      padding: 10px 12px;
-      background: var(--paper);
-      color: var(--ink);
-    }
-    .todo-add button {
+    /* Due-date badge at the end of a todo row. */
+    .due {
+      margin-left: auto;
+      flex: none;
       font-size: 18px;
-      font-weight: 800;
-      font-family: inherit;
-      border: 2px solid var(--line);
-      border-radius: 4px;
-      background: var(--ink);
-      color: var(--paper);
-      padding: 0 22px;
-      cursor: pointer;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      padding-left: 16px;
     }
+    .due.overdue { font-weight: 800; }
 
     /* Fill remaining space so the frame reaches the bottom of the panel. */
     .spacer { flex: 1 1 auto; }
@@ -277,11 +260,6 @@
       </div>
 
       <ul class="todo" id="todoList"></ul>
-
-      <form id="todoAddForm" class="todo-add">
-        <input type="text" id="todoAddInput" placeholder="Add a task&hellip;" autocomplete="off">
-        <button type="submit">Add</button>
-      </form>
     </section>
 
     <div class="spacer"></div>
@@ -394,6 +372,9 @@
           label.appendChild(input);
           label.appendChild(el('span', 'box', tickSvg()));
           label.appendChild(el('span', 'txt', t.text));
+          if (t.due) {
+            label.appendChild(el('span', 'due' + (t.overdue ? ' overdue' : ''), t.due));
+          }
           li.appendChild(label);
           ul.appendChild(li);
         });
@@ -404,21 +385,6 @@
       function loadTodos() {
         return fetch('/api/todos').then(function (r) { return r.json(); }).then(renderTodos);
       }
-
-      document.getElementById('todoAddForm').addEventListener('submit', function (e) {
-        e.preventDefault();
-        var input = document.getElementById('todoAddInput');
-        var text = input.value.trim();
-        if (!text) return;
-        fetch('/api/todos', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: text })
-        }).then(function () {
-          input.value = '';
-          return loadTodos();
-        });
-      });
 
       function loadAll() {
         setUpdated();
