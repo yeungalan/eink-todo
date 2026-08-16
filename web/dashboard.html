@@ -57,56 +57,62 @@
       font-weight: 400;
     }
 
-    .rule       { border: 0; border-top: 3px solid var(--line); margin: 20px 0; }
-    .rule-thick { border: 0; border-top: 4px solid var(--line); margin: 24px 0 22px; }
+    .rule { border: 0; border-top: 3px solid var(--line); margin: 20px 0; }
 
-    /* ---------- Info strip: weather · trains · events ---------- */
-    .strip {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      column-gap: 0;
+    /* ---------- Rotator: one full-width panel visible at a time ---------- */
+    #panels { flex: 1 1 auto; position: relative; }
+    .panel { display: none; }
+    .panel.active {
+      display: block;
+      max-height: calc(100vh - 260px);
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
-    .strip .col { padding: 4px 16px; min-width: 0; }
-    .strip .col + .col { border-left: 2px solid var(--line); }
-    .strip .col:first-child { padding-left: 4px; }
-    .strip .col:last-child  { padding-right: 4px; }
 
-    .col-head {
+    .panel-head {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
+      gap: 14px;
+      margin-bottom: 22px;
     }
-    .col-head .ico { width: 30px; height: 30px; flex: none; }
-    .col-head h2 {
+    .panel-head .ico { width: 40px; height: 40px; flex: none; }
+    .panel-head h2 {
       margin: 0;
-      font-size: 16px;
+      font-size: 26px;
       font-weight: 800;
       letter-spacing: .5px;
-      white-space: nowrap;
     }
 
     /* Weather */
-    .weather { display: flex; align-items: center; gap: 14px; }
-    .weather .big-ico { width: 70px; height: 70px; flex: none; }
-    .weather .temp { font-size: 44px; font-weight: 800; line-height: 1; }
-    .weather .cond { font-size: 20px; margin-top: 4px; }
-    .weather .hilo { font-size: 18px; margin-top: 18px; }
-    .weather .extra { font-size: 18px; margin-top: 10px; }
+    .weather { display: flex; align-items: center; gap: 20px; }
+    .weather .big-ico { width: 100px; height: 100px; flex: none; }
+    .weather .temp { font-size: 64px; font-weight: 800; line-height: 1; }
+    .weather .cond { font-size: 28px; margin-top: 6px; }
+    .weather .hilo { font-size: 24px; margin-top: 22px; }
+    .weather .extra { font-size: 24px; margin-top: 12px; }
 
     /* Train status */
     .lines { list-style: none; margin: 0; padding: 0; }
-    .lines li { display: flex; gap: 12px; align-items: center; margin-bottom: 14px; }
+    .lines li { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
     .lines li:last-child { margin-bottom: 0; }
-    .marker { width: 22px; height: 22px; flex: none; display: block; }
-    .line-name { font-size: 18px; line-height: 1.2; }
-    .line-state { font-size: 16px; }
+    .marker { width: 30px; height: 30px; flex: none; display: block; }
+    .line-name { font-size: 26px; line-height: 1.2; }
+    .line-state { font-size: 20px; }
 
     /* Events */
     .events { list-style: none; margin: 0; padding: 0; }
-    .events li { display: flex; gap: 14px; font-size: 19px; margin-bottom: 14px; }
+    .events li { display: flex; gap: 18px; font-size: 26px; margin-bottom: 18px; }
     .events li:last-child { margin-bottom: 0; }
     .events .t { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* ---------- Rotation progress dots ---------- */
+    .dots { display: flex; justify-content: center; gap: 12px; padding-top: 18px; }
+    .dots span {
+      width: 12px; height: 12px; border-radius: 50%;
+      border: 2px solid var(--line);
+      background: var(--paper);
+    }
+    .dots span.active { background: var(--ink); }
 
     /* ---------- Todo ---------- */
     .todo-head {
@@ -126,29 +132,13 @@
     .todo li { border-top: 1px solid var(--hair); }
     .todo li:first-child { border-top: 0; }
 
-    /* Each row is a big label — comfortable tap target on the touchscreen. */
-    .todo label {
+    .todo .row {
       display: flex;
       align-items: center;
       gap: 26px;
-      padding: 22px 4px;
-      cursor: pointer;
+      padding: 20px 4px;
       font-size: 26px;
     }
-    .todo input { position: absolute; opacity: 0; pointer-events: none; }
-
-    .box {
-      width: 40px;
-      height: 40px;
-      flex: none;
-      border: 3px solid var(--line);
-      border-radius: 6px;
-      display: grid;
-      place-items: center;
-    }
-    /* Tick hidden until the row is checked. */
-    .box .tick { width: 30px; height: 30px; visibility: hidden; }
-    .todo input:checked + .box .tick { visibility: visible; }
 
     /* Due-date badge at the end of a todo row. */
     .due {
@@ -180,10 +170,10 @@
 
     <hr class="rule">
 
-    <section class="strip">
+    <div id="panels">
       <!-- Weather -->
-      <div class="col">
-        <div class="col-head">
+      <div class="panel active">
+        <div class="panel-head">
           <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
             <g stroke="#000" stroke-width="2.4" stroke-linecap="round" fill="none">
               <circle cx="16" cy="15" r="6.5" fill="#fff"/>
@@ -215,8 +205,8 @@
       </div>
 
       <!-- Train status -->
-      <div class="col">
-        <div class="col-head">
+      <div class="panel">
+        <div class="panel-head">
           <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
             <rect x="12" y="6" width="24" height="26" rx="6" fill="none" stroke="#000" stroke-width="2.5"/>
             <rect x="16" y="11" width="16" height="9" rx="2" fill="#000"/>
@@ -232,8 +222,8 @@
       </div>
 
       <!-- Events -->
-      <div class="col">
-        <div class="col-head">
+      <div class="panel">
+        <div class="panel-head">
           <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
             <rect x="6" y="9" width="36" height="33" rx="4" fill="none" stroke="#000" stroke-width="2.5"/>
             <path d="M6 18h36" stroke="#000" stroke-width="2.5"/>
@@ -249,18 +239,18 @@
           <li><span>Loading&hellip;</span></li>
         </ul>
       </div>
-    </section>
 
-    <hr class="rule-thick">
-
-    <section>
-      <div class="todo-head">
-        <h2>TODAY&rsquo;S TODO</h2>
-        <div class="count"><span id="done">3</span> / <span id="total">8</span> completed</div>
+      <!-- Todo -->
+      <div class="panel">
+        <div class="todo-head">
+          <h2>TODAY&rsquo;S TODO</h2>
+          <div class="count"><span id="total">0</span> tasks</div>
+        </div>
+        <ul class="todo" id="todoList"></ul>
       </div>
+    </div>
 
-      <ul class="todo" id="todoList"></ul>
-    </section>
+    <div class="dots" id="dots"></div>
 
     <div class="spacer"></div>
   </div>
@@ -340,40 +330,21 @@
         });
       }
 
-      // ---- Todos (persisted via SQLite-backed API) ----
-      function tickSvg() {
-        return '<svg class="tick" viewBox="0 0 32 32" aria-hidden="true">' +
-          '<path d="M6 17l6.5 6.5L26 9" fill="none" stroke="#000" stroke-width="3.4" ' +
-          'stroke-linecap="round" stroke-linejoin="round"/></svg>';
-      }
-
+      // ---- Todos (read-only view of a Trello board — see trello.go) ----
       function renderTodos(items) {
         var ul = document.getElementById('todoList');
         ul.innerHTML = '';
         items.forEach(function (t) {
           var li = el('li');
-          var label = el('label');
-          var input = el('input');
-          input.type = 'checkbox';
-          input.checked = !!t.done;
-          input.addEventListener('change', function () {
-            fetch('/api/todos/' + t.id, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ done: input.checked })
-            }).then(loadTodos);
-          });
-          label.appendChild(input);
-          label.appendChild(el('span', 'box', tickSvg()));
-          label.appendChild(el('span', 'txt', t.text));
+          var row = el('div', 'row');
+          row.appendChild(el('span', 'txt', t.text));
           if (t.due) {
-            label.appendChild(el('span', 'due' + (t.overdue ? ' overdue' : ''), t.due));
+            row.appendChild(el('span', 'due' + (t.overdue ? ' overdue' : ''), t.due));
           }
-          li.appendChild(label);
+          li.appendChild(row);
           ul.appendChild(li);
         });
         document.getElementById('total').textContent = items.length;
-        document.getElementById('done').textContent = items.filter(function (t) { return t.done; }).length;
       }
 
       function loadTodos() {
@@ -387,6 +358,26 @@
         loadEvents();
         loadTodos();
       }
+
+      // ---- Rotator: cycle through panels full-width, one at a time.
+      // E-ink flashes on every redraw, so this is deliberately slow. ----
+      var ROTATE_MS = 25 * 1000;
+      var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+      var dotsEl = document.getElementById('dots');
+      panels.forEach(function () { dotsEl.appendChild(el('span')); });
+      var dots = Array.prototype.slice.call(dotsEl.children);
+      var panelIndex = 0;
+
+      function showPanel(i) {
+        panels.forEach(function (p, pi) { p.classList.toggle('active', pi === i); });
+        dots.forEach(function (d, di) { d.classList.toggle('active', di === i); });
+      }
+
+      showPanel(0);
+      setInterval(function () {
+        panelIndex = (panelIndex + 1) % panels.length;
+        showPanel(panelIndex);
+      }, ROTATE_MS);
 
       loadAll();
       setInterval(loadAll, REFRESH_MS);
