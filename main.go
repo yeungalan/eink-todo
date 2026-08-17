@@ -61,7 +61,7 @@ func main() {
 	weather := newWeatherCache()
 	calClient := newCalendarClient() // nil if GOOGLE_* env vars are unset
 	trello := newTrelloClient()      // nil if TRELLO_* env vars are unset
-	toei := newToeiCache() // Toei Shinjuku Line, via ODPT's keyless public mirror
+	toei := newToeiCache()           // Toei Shinjuku Line, via ODPT's keyless public mirror
 
 	// JR East lines, scraped from traininfo.jreast.co.jp/train_info/kanto.aspx
 	// (see jreast.go) — one shared fetch serves all of them.

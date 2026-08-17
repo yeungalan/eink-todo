@@ -3,6 +3,7 @@ package main
 import (
 	"sort"
 	"strings"
+	"time"
 )
 
 // NextTrain is one direction's next-departure info for a single station,
@@ -107,7 +108,7 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 		}
 	}
 
-	take := func(ts []*Train) []*NextTrain {
+	take := func(ts []*Train, dir string) []*NextTrain {
 		if len(ts) > hatagayaTrainsMax {
 			ts = ts[:hatagayaTrainsMax]
 		}
@@ -115,11 +116,17 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 		for i, t := range ts {
 			out[i] = toNextTrain(t)
 		}
+		// The live feed doesn't always have hatagayaTrainsMax trains in
+		// range (e.g. off-peak gaps) — pad out to the full count using the
+		// published timetable so the panel isn't left showing "情報なし".
+		if short := hatagayaTrainsMax - len(out); short > 0 {
+			out = append(out, hatagayaScheduleEstimates(time.Now(), dir, short)...)
+		}
 		return out
 	}
 
 	return map[string][]*NextTrain{
-		"up":   take(up),
-		"down": take(down),
+		"up":   take(up, "up"),
+		"down": take(down, "down"),
 	}
 }
