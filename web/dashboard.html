@@ -410,7 +410,8 @@
             }
             list.forEach(function (t, i) {
               var name = pair[1] + (i === 0 ? '' : '（' + (i + 1) + '本目）');
-              var label = t.typeName + ' ' + t.destination + '行 &middot; ' + t.status +
+              var eta = t.status === '到着' ? 'まもなく到着' : '約' + t.etaMin + '分後';
+              var label = t.typeName + ' ' + t.destination + '行 &middot; ' + eta +
                 (t.delayMin > 0 ? '（' + t.delayMin + '分遅れ）' : '');
               var li = el('li');
               li.appendChild(el('div', null,
