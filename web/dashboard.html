@@ -410,12 +410,18 @@
       }
 
       // ---- Train status (Keio's own feed + other operators via /api/lines) ----
+      // Icons are JR East's own status set (traininfo.jreast.co.jp/train_info/
+      // kanto.aspx: ico_info_{normal,delay,adjust,info}.svg) so severity reads
+      // the same way here as on their site — green circle, orange triangle,
+      // red X, orange "!" — rather than collapsing every non-normal level
+      // into one icon.
+      var LINE_STATUS_ICON = { normal: './img/normal.svg', delay: './img/delay.svg', stop: './img/adjust.svg', error: './img/info.svg' };
       function loadLines() {
         fetch('/api/lines').then(function (r) { return r.json(); }).then(function (lines) {
           var ul = document.getElementById('linesList');
           ul.innerHTML = '';
           (lines || []).forEach(function (s) {
-            var icon = (s.level === 'normal') ? './img/normal.svg' : './img/adjust.svg';
+            var icon = LINE_STATUS_ICON[s.level] || './img/info.svg';
             var li = el('li');
             var img = el('img', 'marker');
             img.src = icon; img.width = 22; img.height = 22;
