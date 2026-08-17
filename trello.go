@@ -18,8 +18,9 @@ type Todo struct {
 	ID      string `json:"id"`
 	Text    string `json:"text"`
 	Done    bool   `json:"done"`
-	List    string `json:"list"`          // source list name, e.g. "WIP"
-	Due     string `json:"due,omitempty"` // formatted, e.g. "Aug 25"; absent if the card has no due date
+	List    string `json:"list"`             // source list name, e.g. "WIP"
+	Due     string `json:"due,omitempty"`    // formatted, e.g. "Aug 25"; absent if the card has no due date
+	DueISO  string `json:"dueISO,omitempty"` // RFC3339; only for real due dates (see Due), for client-side date math
 	Overdue bool   `json:"overdue,omitempty"`
 
 	dueAt        time.Time // zero value = no due date; used for sorting only
@@ -177,6 +178,7 @@ func (c *trelloClient) fetchList() ([]Todo, error) {
 				if due, err := time.Parse(time.RFC3339, *c.Due); err == nil {
 					t.dueAt = due
 					t.Due = relativeDate(due.Local(), now)
+					t.DueISO = due.Format(time.RFC3339)
 					t.Overdue = due.Before(now)
 				}
 			} else if l.Priority < 2 {

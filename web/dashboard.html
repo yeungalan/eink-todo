@@ -132,9 +132,22 @@
 
     /* Events */
     .events { list-style: none; margin: 0; padding: 0; }
-    .events li { display: flex; gap: 18px; font-size: 26px; margin-bottom: 18px; }
+    .events li { display: flex; gap: 18px; font-size: 26px; margin-bottom: 18px; align-items: baseline; }
     .events li:last-child { margin-bottom: 0; }
     .events .t { font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    /* Trello cards due this week, merged into the events list below the
+       calendar entries; a bordered badge instead of a clock time sets them
+       apart from actual scheduled events. */
+    .events .subhead {
+      font-size: 16px; font-weight: 800; letter-spacing: 1px;
+      border-top: 2px solid var(--line); margin: 22px 0 4px; padding-top: 14px;
+    }
+    .events .tag {
+      flex: none; font-size: 14px; font-weight: 800; white-space: nowrap;
+      border: 1.5px solid var(--line); border-radius: 4px; padding: 3px 8px;
+    }
+    .events .tag.due-today { background: var(--ink); color: var(--paper); }
 
     /* ---------- Rotation progress dots ---------- */
     .dots { display: flex; justify-content: center; gap: 12px; padding-top: 18px; }
@@ -306,7 +319,7 @@
               <rect x="13" y="32" width="4" height="4"/><rect x="22" y="32" width="4" height="4"/><rect x="31" y="32" width="4" height="4"/>
             </g>
           </svg>
-          <h2>今日の予定</h2>
+          <h2>今日の予定・タスク</h2>
         </div>
         <ul class="events" id="eventsList">
           <li><span>読み込み中&hellip;</span></li>
@@ -457,21 +470,58 @@
         });
       }
 
-      // ---- Today's events (Google Calendar) ----
+      // ---- Today's events (Google Calendar) + Trello cards due this week ----
+      // "This week" is a forward-looking rolling window: due today through
+      // 6 days out. Deliberately excludes already-overdue cards — those
+      // stay visible in the main Trello panels (sorted to the front there)
+      // rather than cluttering this planning view indefinitely.
+      function daysUntil(iso) {
+        var due = new Date(iso);
+        var dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        return Math.round((dueDay - today) / 86400000);
+      }
+
       function loadEvents() {
-        fetch('/api/events').then(function (r) { return r.json(); }).then(function (events) {
+        Promise.all([
+          fetch('/api/events').then(function (r) { return r.json(); }).catch(function () { return null; }),
+          fetch('/api/todos').then(function (r) { return r.json(); }).catch(function () { return null; })
+        ]).then(function (results) {
+          var events = results[0];
+          var todos = results[1];
           var ul = document.getElementById('eventsList');
           ul.innerHTML = '';
-          if (!Array.isArray(events) || events.length === 0) {
+
+          var hasEvents = Array.isArray(events) && events.length > 0;
+          if (!hasEvents) {
             ul.appendChild(el('li', null, '<span>本日の予定はありません</span>'));
-            return;
+          } else {
+            events.forEach(function (ev) {
+              var li = el('li');
+              li.appendChild(el('span', 't', ev.allDay ? '終日' : ev.time));
+              li.appendChild(el('span', null, ev.title));
+              ul.appendChild(li);
+            });
           }
-          events.forEach(function (ev) {
-            var li = el('li');
-            li.appendChild(el('span', 't', ev.allDay ? '終日' : ev.time));
-            li.appendChild(el('span', null, ev.title));
-            ul.appendChild(li);
-          });
+
+          var dueSoon = (Array.isArray(todos) ? todos : [])
+            .filter(function (t) {
+              if (!t.dueISO) return false;
+              var days = daysUntil(t.dueISO);
+              return days >= 0 && days <= 6;
+            });
+          if (dueSoon.length > 0) {
+            ul.appendChild(el('li', 'subhead', '今週締め切りのタスク'));
+            dueSoon.forEach(function (t) {
+              var days = daysUntil(t.dueISO);
+              var tagCls = 'tag' + (days === 0 ? ' due-today' : '');
+              var li = el('li');
+              li.appendChild(el('span', tagCls, t.due));
+              li.appendChild(el('span', null, t.text));
+              ul.appendChild(li);
+            });
+          }
         }).catch(function () {
           document.getElementById('eventsList').innerHTML = '<li><span>取得できません</span></li>';
         });
