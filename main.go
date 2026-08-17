@@ -25,6 +25,22 @@ func main() {
 		addr = ":8080"
 	}
 
+	// The board is only ever read against Tokyo train/calendar schedules, so
+	// pin time.Local explicitly instead of trusting whatever timezone the
+	// host happens to be in — the Kindle client's own clock/cache handling
+	// gets confused when server timestamps drift from JST. Overridable via
+	// TZ in config.env for local dev.
+	tz := os.Getenv("TZ")
+	if tz == "" {
+		tz = "Asia/Tokyo"
+	}
+	loc, err := time.LoadLocation(tz)
+	if err != nil {
+		log.Fatalf("load timezone %q: %v", tz, err)
+	}
+	time.Local = loc
+	log.Printf("timezone set to %s", tz)
+
 	client := NewClient()
 	if err := client.LoadConfig(); err != nil {
 		log.Fatalf("load config: %v", err)
@@ -40,6 +56,7 @@ func main() {
 	}()
 
 	cache := &stateCache{client: client, ttl: 8 * time.Second}
+	hatagayaCache := &ttlCache[map[string][]*NextTrain]{ttl: 30 * time.Second}
 
 	weather := newWeatherCache()
 	calClient := newCalendarClient() // nil if GOOGLE_* env vars are unset
@@ -54,9 +71,6 @@ func main() {
 		Slug string
 	}{
 		{"JR山手線", jrLineYamanote},
-		{"JR上野東京ライン", jrLineUenoTokyo},
-		{"JR湘南新宿ライン", jrLineShonanShinjuku},
-		{"JR東海道線", jrLineTokaido},
 	}
 
 	mux := http.NewServeMux()
@@ -109,17 +123,25 @@ func main() {
 		json.NewEncoder(w).Encode(lines)
 	})
 
-	// /api/hatagaya: next up/down train at Hatagaya, derived from the
-	// Keio feed already fetched above — no extra upstream call.
+	// /api/hatagaya: next up/down train at Hatagaya, derived from the Keio
+	// feed already fetched above. Held in its own 30s cache — independent of
+	// the 8s state cache — since predicted arrival times don't need to churn
+	// as often as the raw train positions do.
 	mux.HandleFunc("/api/hatagaya", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		st, err := cache.get()
+		next, err := hatagayaCache.get(func() (map[string][]*NextTrain, error) {
+			st, err := cache.get()
+			if err != nil {
+				return nil, err
+			}
+			return hatagayaNextTrains(st.Trains), nil
+		})
 		if err != nil {
 			w.WriteHeader(http.StatusBadGateway)
 			json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
-		json.NewEncoder(w).Encode(hatagayaNextTrains(st.Trains))
+		json.NewEncoder(w).Encode(next)
 	})
 
 	mux.HandleFunc("/api/meta", func(w http.ResponseWriter, r *http.Request) {
@@ -224,6 +246,42 @@ func main() {
 	}
 	log.Printf("Keio live board listening on %s", addr)
 	log.Fatal(srv.ListenAndServe())
+}
+
+// ttlCache holds a single computed value for ttl before recomputing it via
+// the get() callback. Unlike stateCache it doesn't coalesce concurrent
+// in-flight recomputation — callers are cheap, local derivations, not
+// upstream HTTP fetches.
+type ttlCache[T any] struct {
+	ttl time.Duration
+
+	mu      sync.Mutex
+	value   T
+	fetched time.Time
+	has     bool
+}
+
+func (c *ttlCache[T]) get(compute func() (T, error)) (T, error) {
+	c.mu.Lock()
+	if c.has && time.Since(c.fetched) < c.ttl {
+		v := c.value
+		c.mu.Unlock()
+		return v, nil
+	}
+	c.mu.Unlock()
+
+	v, err := compute()
+	if err != nil {
+		var zero T
+		return zero, err
+	}
+
+	c.mu.Lock()
+	c.value = v
+	c.fetched = time.Now()
+	c.has = true
+	c.mu.Unlock()
+	return v, nil
 }
 
 // stateCache coalesces upstream fetches so bursts of browser polls (or many
