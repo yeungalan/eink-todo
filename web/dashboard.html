@@ -362,9 +362,20 @@
         return e;
       }
 
+      // The server's clock (pinned to Asia/Tokyo — see main.go's /api/now),
+      // not the Kindle's own — its clock/timezone can't be trusted. Falls
+      // back to the local clock only if the fetch itself fails, so the
+      // dashboard still renders something rather than going blank.
+      var serverNow = new Date();
+      function loadServerNow() {
+        return fetch('/api/now').then(function (r) { return r.json(); }).then(function (d) {
+          serverNow = new Date(d.now);
+        }).catch(function () { /* keep the previous serverNow / local fallback */ });
+      }
+
       function setUpdated() {
         document.getElementById('updated').textContent =
-          new Date().toLocaleString('ja-JP', {
+          serverNow.toLocaleString('ja-JP', {
             year: 'numeric', month: 'long', day: 'numeric',
             hour: '2-digit', minute: '2-digit'
           });
@@ -513,8 +524,7 @@
       function daysUntil(iso) {
         var due = new Date(iso);
         var dueDay = new Date(due.getFullYear(), due.getMonth(), due.getDate());
-        var now = new Date();
-        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var today = new Date(serverNow.getFullYear(), serverNow.getMonth(), serverNow.getDate());
         return Math.round((dueDay - today) / 86400000);
       }
 
@@ -626,11 +636,13 @@
       }
 
       function loadAll() {
-        setUpdated();
+        loadServerNow().then(function () {
+          setUpdated();
+          loadEvents();
+        });
         loadWeather();
         loadLines();
         loadHatagaya();
-        loadEvents();
       }
 
       // ---- Rotator: cycle through panels full-width, one at a time.

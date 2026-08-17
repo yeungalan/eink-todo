@@ -144,6 +144,17 @@ func main() {
 		json.NewEncoder(w).Encode(next)
 	})
 
+	// /api/now hands the client the server's own clock (pinned to Asia/Tokyo
+	// above) so date-boundary logic — e.g. today/tomorrow/N-days-out labels
+	// on the dashboard — is computed from a trustworthy source instead of
+	// the Kindle's own clock, which has been seen drifting or defaulting to
+	// the wrong timezone.
+	mux.HandleFunc("/api/now", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json; charset=utf-8")
+		w.Header().Set("Cache-Control", "no-store")
+		json.NewEncoder(w).Encode(map[string]string{"now": time.Now().Format(time.RFC3339)})
+	})
+
 	mux.HandleFunc("/api/meta", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		json.NewEncoder(w).Encode(map[string]any{"branches": branches})
