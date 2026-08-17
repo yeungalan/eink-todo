@@ -148,11 +148,12 @@ func isScheduleWeekend(day time.Time) bool {
 }
 
 // hatagayaScheduledDepartures returns the next n scheduled departure times
-// for direction dir (>= now), walking forward across service-day boundaries
-// (and day-type changes, e.g. Friday night into Saturday) as needed.
-func hatagayaScheduledDepartures(now time.Time, dir string, n int) []time.Time {
+// for direction dir at or after searchFrom, walking forward across
+// service-day boundaries (and day-type changes, e.g. Friday night into
+// Saturday) as needed.
+func hatagayaScheduledDepartures(searchFrom time.Time, dir string, n int) []time.Time {
 	var out []time.Time
-	day := serviceDay(now)
+	day := serviceDay(searchFrom)
 	for daysTried := 0; len(out) < n && daysTried < 7; daysTried++ { // safety bound: a week out is plenty
 		weekend := isScheduleWeekend(day)
 		hours := hatagayaScheduleMinutes[dir][weekend]
@@ -164,8 +165,8 @@ func hatagayaScheduledDepartures(now time.Time, dir string, n int) []time.Time {
 				date = day.AddDate(0, 0, 1)
 			}
 			for _, m := range hours[h] {
-				dep := time.Date(date.Year(), date.Month(), date.Day(), h, m, 0, 0, now.Location())
-				if dep.Before(now) {
+				dep := time.Date(date.Year(), date.Month(), date.Day(), h, m, 0, 0, searchFrom.Location())
+				if dep.Before(searchFrom) {
 					continue
 				}
 				out = append(out, dep)
@@ -180,13 +181,14 @@ func hatagayaScheduledDepartures(now time.Time, dir string, n int) []time.Time {
 }
 
 // hatagayaScheduleEstimates fills in up to n schedule-derived NextTrain
-// entries for direction dir, skipping any departure earlier than skipBefore
-// (used to avoid duplicating a live-tracked train that's already listed).
-// These are marked Status "予定" (scheduled) rather than a live "接近中"/
-// "到着" status, since they come from the static timetable, not train
-// position tracking.
-func hatagayaScheduleEstimates(now time.Time, dir string, n int) []*NextTrain {
-	deps := hatagayaScheduledDepartures(now, dir, n)
+// entries for direction dir, considering only departures at or after
+// searchFrom — pass a time just past the last live-tracked train (rather
+// than now) so an estimate never duplicates a train the live feed already
+// reported. ETA is still shown relative to the real now. These entries are
+// marked Status "予定" (scheduled) rather than a live "接近中"/"到着" status,
+// since they come from the static timetable, not train position tracking.
+func hatagayaScheduleEstimates(now, searchFrom time.Time, dir string, n int) []*NextTrain {
+	deps := hatagayaScheduledDepartures(searchFrom, dir, n)
 	out := make([]*NextTrain, len(deps))
 	for i, dep := range deps {
 		out[i] = &NextTrain{

@@ -20,13 +20,20 @@ type NextTrain struct {
 const (
 	hatagayaBranch    = "shinsen"
 	hatagayaName      = "幡ヶ谷"
-	hatagayaTrainsMax = 3 // how many upcoming trains to show per direction
+	hatagayaTrainsMax = 2 // how many upcoming trains to show per direction — keep the panel to a screen's worth, no scrollbar
 
 	// The feed gives no speed/ETA data, only a station-granularity position,
 	// so estimated arrival time is (station segments away) * this constant.
 	// Tuned to the Keio New Line/Toei Shinjuku Line's typical inter-station
 	// run time — treat it as a rough "about N min", not a real prediction.
 	hatagayaMinPerSegment = 2.0
+
+	// Minimum gap enforced between the last live-tracked train and the
+	// first schedule-derived estimate used to pad the list out to
+	// hatagayaTrainsMax — without it, a scheduled departure a minute or two
+	// after the last live ETA is almost always the *same* physical train
+	// double-listed, once as live and once as "予定".
+	hatagayaScheduleGuard = 4 * time.Minute
 )
 
 // isToeiShinjukuBound reports whether a destination string marks a train as
@@ -120,7 +127,15 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 		// range (e.g. off-peak gaps) — pad out to the full count using the
 		// published timetable so the panel isn't left showing "情報なし".
 		if short := hatagayaTrainsMax - len(out); short > 0 {
-			out = append(out, hatagayaScheduleEstimates(time.Now(), dir, short)...)
+			now := time.Now()
+			searchFrom := now
+			if n := len(out); n > 0 {
+				lastDep := now.Add(time.Duration(out[n-1].EtaMin) * time.Minute).Add(hatagayaScheduleGuard)
+				if lastDep.After(searchFrom) {
+					searchFrom = lastDep
+				}
+			}
+			out = append(out, hatagayaScheduleEstimates(now, searchFrom, dir, short)...)
 		}
 		return out
 	}
