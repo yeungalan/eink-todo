@@ -105,30 +105,33 @@
     .line-name { font-size: 26px; line-height: 1.2; }
     .line-state { font-size: 20px; }
 
-    /* Hatagaya next-trains board: big ETA first, like a real platform sign. */
-    .tgroup { margin-bottom: 28px; }
+    /* Hatagaya next-trains board: big ETA first, like a real platform sign.
+       Sized compactly (vs. the rest of the dashboard) so two directions x
+       hatagayaTrainsMax rows fit one panel without scrolling — the Kindle
+       has no practical way to scroll a static rotation panel. */
+    .tgroup { margin-bottom: 14px; }
     .tgroup:last-child { margin-bottom: 0; }
     .tgroup-label {
-      font-size: 18px; font-weight: 800; letter-spacing: 1px;
-      padding-bottom: 6px; border-bottom: 2px solid var(--line);
-      margin-bottom: 4px;
+      font-size: 15px; font-weight: 800; letter-spacing: 1px;
+      padding-bottom: 3px; border-bottom: 2px solid var(--line);
+      margin-bottom: 2px;
     }
     .trains { list-style: none; margin: 0; padding: 0; }
     .trains li {
-      display: flex; align-items: baseline; gap: 20px;
-      padding: 14px 0; border-top: 1px solid var(--hair);
+      display: flex; align-items: baseline; gap: 16px;
+      padding: 8px 0; border-top: 1px solid var(--hair);
     }
     .trains li:first-child { border-top: 0; }
     .trains .eta {
-      flex: none; width: 76px;
-      font-size: 34px; font-weight: 800; line-height: 1;
+      flex: none; width: 62px;
+      font-size: 26px; font-weight: 800; line-height: 1;
       font-variant-numeric: tabular-nums; text-align: right;
     }
-    .trains .eta.now { font-size: 22px; }
-    .trains .eta small { font-size: 16px; font-weight: 400; margin-left: 1px; }
+    .trains .eta.now { font-size: 18px; }
+    .trains .eta small { font-size: 14px; font-weight: 400; margin-left: 1px; }
     .trains .tinfo { flex: 1 1 auto; min-width: 0; }
-    .trains .ttype { font-size: 23px; line-height: 1.25; }
-    .trains .tmeta { font-size: 16px; margin-top: 3px; }
+    .trains .ttype { font-size: 19px; line-height: 1.2; }
+    .trains .tmeta { font-size: 13px; margin-top: 2px; }
     /* Schedule-derived fallback rows (no live position data) — timetable
        estimate rather than a tracked train, set apart with italics. */
     .trains .tinfo.estimated { font-style: italic; opacity: 0.75; }
