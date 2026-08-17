@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 	"regexp"
+	"strings"
 	"sync"
 	"time"
 )
@@ -79,7 +80,7 @@ func (c *jrKantoCache) snapshot() (map[string]LineStatus, error) {
 	return m, nil
 }
 
-// jrRouteRe pulls (line slug, status level, status label) triples out of
+// jrRouteRe pulls (line slug, status level, raw label HTML) triples out of
 // kanto.aspx's route listing, e.g.:
 //
 //	<a href="/train_info/line.aspx?gid=1&lineid=ueno-tokyoline" class="traininfo-routes__info">
@@ -90,8 +91,27 @@ func (c *jrKantoCache) snapshot() (map[string]LineStatus, error) {
 // Anchored on "lineid=" rather than the line-color badge span, since major
 // lines (Yamanote, Ueno-Tokyo, ...) render a two-letter icon badge instead
 // of a plain color one, but every entry links to line.aspx with its slug.
+//
+// The label group captures everything up to </p> rather than requiring a
+// flat <span>text</span>: a line with an estimated resumption time nests a
+// second <span> around the clock time (e.g. <span><span>11時20分頃</span>
+// 運転再開見込</span>), which a stricter [^<]+ group fails to match — and
+// since this whole pattern is unanchored, FindAll doesn't just miss that
+// line, it keeps scanning past it and silently attaches the *next* line's
+// unrelated status. See htmlTagRe below for turning this raw HTML into text.
 var jrRouteRe = regexp.MustCompile(
-	`(?s)lineid=([a-z0-9-]+)".*?traininfo-routes__status ([a-z]+)">\s*<span>([^<]+)</span>`)
+	`(?s)lineid=([a-z0-9-]+)".*?traininfo-routes__status ([a-z]+)">(.*?)</p>`)
+
+var htmlTagRe = regexp.MustCompile(`<[^>]*>`)
+var whitespaceRunRe = regexp.MustCompile(`\s+`)
+
+// stripTags turns a fragment of inner HTML (possibly with nested tags, e.g.
+// a resumption-time <span> inside the status <span>) into flat text,
+// preserving a word boundary where a tag used to be rather than mashing
+// adjacent text together.
+func stripTags(html string) string {
+	return strings.TrimSpace(whitespaceRunRe.ReplaceAllString(htmlTagRe.ReplaceAllString(html, " "), " "))
+}
 
 func (c *jrKantoCache) fetch() (map[string]LineStatus, error) {
 	const url = "https://traininfo.jreast.co.jp/train_info/kanto.aspx"
@@ -112,7 +132,7 @@ func (c *jrKantoCache) fetch() (map[string]LineStatus, error) {
 
 	out := map[string]LineStatus{}
 	for _, m := range jrRouteRe.FindAllSubmatch(body, -1) {
-		slug, level, text := string(m[1]), string(m[2]), string(m[3])
+		slug, level, text := string(m[1]), string(m[2]), stripTags(string(m[3]))
 		if _, exists := out[slug]; exists {
 			continue // first occurrence wins (a line can be listed more than once, e.g. by section)
 		}
