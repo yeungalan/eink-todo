@@ -139,8 +139,13 @@
     .events li:last-child { margin-bottom: 0; }
     .events .t { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
-    /* Trello cards due this week, in their own panel; reuses .events'
-       list styling but swaps the clock time for a bordered due-date badge. */
+    /* Trello cards due this week, merged into the events list below the
+       calendar entries; a bordered badge instead of a clock time sets them
+       apart from actual scheduled events. */
+    .events .subhead {
+      font-size: 16px; font-weight: 800; letter-spacing: 1px;
+      border-top: 2px solid var(--line); margin: 22px 0 4px; padding-top: 14px;
+    }
     .events .tag {
       flex: none; font-size: 14px; font-weight: 800; white-space: nowrap;
       border: 1.5px solid var(--line); border-radius: 4px; padding: 3px 8px;
@@ -320,23 +325,6 @@
           <h2>今日の予定・タスク</h2>
         </div>
         <ul class="events" id="eventsList">
-          <li><span>読み込み中&hellip;</span></li>
-        </ul>
-      </div>
-
-      <!-- Trello cards due this week — its own panel (not tacked onto the
-           bottom of Events) so it always gets a full rotation slot instead
-           of depending on scrolling past today's events, which doesn't
-           work on the Kindle. -->
-      <div class="panel">
-        <div class="panel-head">
-          <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
-            <rect x="8" y="6" width="32" height="36" rx="4" fill="none" stroke="#000" stroke-width="2.5"/>
-            <path d="M15 17h18M15 24h18M15 31h11" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
-          <h2>今週締め切りのタスク</h2>
-        </div>
-        <ul class="events" id="dueSoonList">
           <li><span>読み込み中&hellip;</span></li>
         </ul>
       </div>
@@ -556,23 +544,19 @@
               var days = daysUntil(t.dueISO);
               return days >= 0 && days <= 6;
             });
-          var dueSoonUl = document.getElementById('dueSoonList');
-          dueSoonUl.innerHTML = '';
-          if (dueSoon.length === 0) {
-            dueSoonUl.appendChild(el('li', null, '<span>締め切りのタスクはありません</span>'));
-          } else {
+          if (dueSoon.length > 0) {
+            ul.appendChild(el('li', 'subhead', '今週締め切りのタスク'));
             dueSoon.forEach(function (t) {
               var days = daysUntil(t.dueISO);
               var tagCls = 'tag' + (days === 0 ? ' due-today' : '');
               var li = el('li');
               li.appendChild(el('span', tagCls, t.due));
               li.appendChild(el('span', null, t.text));
-              dueSoonUl.appendChild(li);
+              ul.appendChild(li);
             });
           }
         }).catch(function () {
           document.getElementById('eventsList').innerHTML = '<li><span>取得できません</span></li>';
-          document.getElementById('dueSoonList').innerHTML = '<li><span>取得できません</span></li>';
         });
       }
 
