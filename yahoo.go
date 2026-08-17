@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
@@ -9,10 +10,12 @@ import (
 	"time"
 )
 
-// yamanoteCache fetches JR Yamanote Line status from Yahoo!路線情報
-// (transit.yahoo.co.jp) — no key or auth needed, but it's an HTML scrape
-// rather than a stable API, so treat it as best-effort.
-type yamanoteCache struct {
+// yahooLineCache fetches a JR East line's status from Yahoo!路線情報
+// (transit.yahoo.co.jp/diainfo/<lineID>/0) — no key or auth needed, but it's
+// an HTML scrape rather than a stable API, so treat it as best-effort.
+type yahooLineCache struct {
+	lineID string
+
 	mu      sync.Mutex
 	value   *LineStatus
 	fetched time.Time
@@ -20,11 +23,19 @@ type yamanoteCache struct {
 	http    *http.Client
 }
 
-func newYamanoteCache() *yamanoteCache {
-	return &yamanoteCache{ttl: 2 * time.Minute, http: &http.Client{Timeout: 8 * time.Second}}
+// Yahoo!路線情報 diainfo IDs for the JR East lines this dashboard tracks.
+const (
+	yahooLineYamanote       = "21"  // 山手線
+	yahooLineUenoTokyo      = "627" // 上野東京ライン
+	yahooLineShonanShinjuku = "25"  // 湘南新宿ライン
+	yahooLineTokaido        = "27"  // 東海道本線（東京～熱海）
+)
+
+func newYahooLineCache(lineID string) *yahooLineCache {
+	return &yahooLineCache{lineID: lineID, ttl: 2 * time.Minute, http: &http.Client{Timeout: 8 * time.Second}}
 }
 
-func (c *yamanoteCache) get() (*LineStatus, error) {
+func (c *yahooLineCache) get() (*LineStatus, error) {
 	c.mu.Lock()
 	if c.value != nil && time.Since(c.fetched) < c.ttl {
 		v := c.value
@@ -57,11 +68,16 @@ func (c *yamanoteCache) get() (*LineStatus, error) {
 //
 //	<div id="mdServiceStatus"><dl><dt><span class="icnNormalLarge"></span>平常運転</dt>
 //	<dd class="normal"><p>現在､事故･遅延に関する情報はありません。</p></dd></dl></div>
+//
+// A disrupted line's <p> often has a trailing "(8月17日 10時10分掲載)"
+// timestamp wrapped in its own <span> before the closing </p> — the detail
+// capture group deliberately doesn't require an immediate </p> so it still
+// matches up to that inner tag instead of failing the whole line.
 var mdServiceStatusRe = regexp.MustCompile(
-	`id="mdServiceStatus"><dl><dt>(?:<span[^>]*></span>)?([^<]+)</dt><dd class="([^"]+)"><p>([^<]+)</p>`)
+	`id="mdServiceStatus"><dl><dt>(?:<span[^>]*></span>)?([^<]+)</dt><dd class="([^"]+)"><p>([^<]+)`)
 
-func (c *yamanoteCache) fetch() (*LineStatus, error) {
-	const url = "https://transit.yahoo.co.jp/diainfo/21/0" // 山手線
+func (c *yahooLineCache) fetch() (*LineStatus, error) {
+	url := fmt.Sprintf("https://transit.yahoo.co.jp/diainfo/%s/0", c.lineID)
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err

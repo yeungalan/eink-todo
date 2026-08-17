@@ -44,8 +44,18 @@ func main() {
 	weather := newWeatherCache()
 	calClient := newCalendarClient() // nil if GOOGLE_* env vars are unset
 	trello := newTrelloClient()      // nil if TRELLO_* env vars are unset
-	toei := newToeiCache()           // Toei Shinjuku Line, via ODPT's keyless public mirror
-	yamanote := newYamanoteCache()   // JR Yamanote Line, scraped from Yahoo!路線情報
+	toei := newToeiCache() // Toei Shinjuku Line, via ODPT's keyless public mirror
+
+	// JR East lines, scraped from Yahoo!路線情報 (see yahoo.go).
+	jrLines := []struct {
+		Name  string
+		Cache *yahooLineCache
+	}{
+		{"JR山手線", newYahooLineCache(yahooLineYamanote)},
+		{"JR上野東京ライン", newYahooLineCache(yahooLineUenoTokyo)},
+		{"JR湘南新宿ライン", newYahooLineCache(yahooLineShonanShinjuku)},
+		{"JR東海道線", newYahooLineCache(yahooLineTokaido)},
+	}
 
 	mux := http.NewServeMux()
 
@@ -63,7 +73,8 @@ func main() {
 
 	// /api/lines is a flat, named list for the e-ink dashboard's 運行情報
 	// column — combines the Keio feed (already fetched for /api/state) with
-	// other operators as they're added (currently just Toei Shinjuku).
+	// other operators (Toei Shinjuku, and JR East's Yamanote/Ueno-Tokyo/
+	// Shonan-Shinjuku/Tokaido lines).
 	mux.HandleFunc("/api/lines", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		st, err := cache.get()
@@ -85,11 +96,13 @@ func main() {
 				LineStatus
 			}{Name: "都営新宿線", LineStatus: *toeiStatus})
 		}
-		if yamanoteStatus, err := yamanote.get(); err == nil {
-			lines = append(lines, struct {
-				Name string `json:"name"`
-				LineStatus
-			}{Name: "JR山手線", LineStatus: *yamanoteStatus})
+		for _, jr := range jrLines {
+			if status, err := jr.Cache.get(); err == nil {
+				lines = append(lines, struct {
+					Name string `json:"name"`
+					LineStatus
+				}{Name: jr.Name, LineStatus: *status})
+			}
 		}
 		json.NewEncoder(w).Encode(lines)
 	})
