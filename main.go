@@ -46,15 +46,17 @@ func main() {
 	trello := newTrelloClient()      // nil if TRELLO_* env vars are unset
 	toei := newToeiCache() // Toei Shinjuku Line, via ODPT's keyless public mirror
 
-	// JR East lines, scraped from Yahoo!路線情報 (see yahoo.go).
+	// JR East lines, scraped from traininfo.jreast.co.jp/train_info/kanto.aspx
+	// (see jreast.go) — one shared fetch serves all of them.
+	jrKanto := newJRKantoCache()
 	jrLines := []struct {
-		Name  string
-		Cache *yahooLineCache
+		Name string
+		Slug string
 	}{
-		{"JR山手線", newYahooLineCache(yahooLineYamanote)},
-		{"JR上野東京ライン", newYahooLineCache(yahooLineUenoTokyo)},
-		{"JR湘南新宿ライン", newYahooLineCache(yahooLineShonanShinjuku)},
-		{"JR東海道線", newYahooLineCache(yahooLineTokaido)},
+		{"JR山手線", jrLineYamanote},
+		{"JR上野東京ライン", jrLineUenoTokyo},
+		{"JR湘南新宿ライン", jrLineShonanShinjuku},
+		{"JR東海道線", jrLineTokaido},
 	}
 
 	mux := http.NewServeMux()
@@ -97,7 +99,7 @@ func main() {
 			}{Name: "都営新宿線", LineStatus: *toeiStatus})
 		}
 		for _, jr := range jrLines {
-			if status, err := jr.Cache.get(); err == nil {
+			if status, err := jrKanto.get(jr.Slug); err == nil {
 				lines = append(lines, struct {
 					Name string `json:"name"`
 					LineStatus

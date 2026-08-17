@@ -411,11 +411,22 @@
 
       // ---- Train status (Keio's own feed + other operators via /api/lines) ----
       // Icons are JR East's own status set (traininfo.jreast.co.jp/train_info/
-      // kanto.aspx: ico_info_{normal,delay,adjust,info}.svg) so severity reads
-      // the same way here as on their site — green circle, orange triangle,
-      // red X, orange "!" — rather than collapsing every non-normal level
-      // into one icon.
-      var LINE_STATUS_ICON = { normal: './img/normal.svg', delay: './img/delay.svg', stop: './img/adjust.svg', error: './img/info.svg' };
+      // kanto.aspx: ico_info_{normal,delay,adjust,info,direct}.svg) so
+      // severity reads the same way here as on their site — green circle,
+      // orange triangle, red X, orange "!", grey through-service-cut arrow —
+      // rather than collapsing every non-normal level into one icon. Keio/
+      // Toei only ever report "stop" (full suspension, no JR-style "adjust"
+      // vs "stopdirect" distinction), so it maps to the same red X as JR's
+      // "adjust".
+      var LINE_STATUS_ICON = {
+        normal: './img/normal.svg',
+        delay: './img/delay.svg',
+        adjust: './img/adjust.svg',
+        stop: './img/adjust.svg',
+        stopdirect: './img/direct.svg',
+        info: './img/info.svg',
+        error: './img/info.svg'
+      };
       function loadLines() {
         fetch('/api/lines').then(function (r) { return r.json(); }).then(function (lines) {
           var ul = document.getElementById('linesList');
