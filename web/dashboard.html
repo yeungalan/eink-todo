@@ -192,7 +192,7 @@
           <h2>天気</h2>
         </div>
         <div class="weather">
-          <svg class="big-ico" viewBox="0 0 48 48" aria-hidden="true">
+          <svg class="big-ico" id="wx-icon" viewBox="0 0 48 48" aria-hidden="true">
             <g stroke="#000" stroke-width="2.2" stroke-linecap="round" fill="none">
               <circle cx="16" cy="15" r="6.5" fill="#fff"/>
               <path d="M16 3.5V6.5M24.13 6.87 22 9M27.5 15H24.5M7.87 6.87 10 9M4.5 15H7.5"/>
@@ -318,9 +318,44 @@
       }
 
       // ---- Weather ----
+      // Each fragment below is drawn in a 48x48 viewBox to match the panel
+      // markup that used to be hardcoded here (a static sun-behind-cloud
+      // icon that never changed regardless of actual conditions).
+      var WX_SUN_SMALL = '<g stroke="#000" stroke-width="2.2" stroke-linecap="round" fill="none">' +
+        '<circle cx="16" cy="15" r="6.5" fill="#fff"/>' +
+        '<path d="M16 3.5V6.5M24.13 6.87 22 9M27.5 15H24.5M7.87 6.87 10 9M4.5 15H7.5"/></g>';
+      var WX_SUN_BIG = '<g stroke="#000" stroke-width="2.4" stroke-linecap="round" fill="none">' +
+        '<circle cx="24" cy="24" r="10" fill="#fff"/>' +
+        '<path d="M24 4v6M24 38v6M4 24h6M38 24h6M9.5 9.5l4.2 4.2M34.3 34.3l4.2 4.2M9.5 38.5l4.2-4.2M34.3 13.7l4.2-4.2"/></g>';
+      var WX_CLOUD_SMALL = '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" ' +
+        'transform="translate(15,17)" fill="#fff" stroke="#000" stroke-width="2.1" stroke-linejoin="round"/>';
+      var WX_CLOUD_BIG = '<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" ' +
+        'transform="translate(7,13) scale(1.35)" fill="#fff" stroke="#000" stroke-width="1.7" stroke-linejoin="round"/>';
+      var WX_RAIN = '<g stroke="#000" stroke-width="2.4" stroke-linecap="round">' +
+        '<path d="M17 38l-3 6M25 38l-3 6M33 38l-3 6"/></g>';
+      var WX_SNOW = '<g stroke="#000" stroke-width="2.2" stroke-linecap="round">' +
+        '<path d="M17 39v6M14 42h6M25 39v6M22 42h6M33 39v6M30 42h6"/></g>';
+      var WX_FOG = '<g stroke="#000" stroke-width="2.4" stroke-linecap="round">' +
+        '<path d="M9 37h13M27 37h13M13 43h22"/></g>';
+      var WX_THUNDER = '<path d="M25 37l-6 9h5l-3 7 9-11h-5l3-5z" fill="#000" stroke="#000" stroke-width="1.2" stroke-linejoin="round"/>';
+
+      function weatherIconMarkup(icon) {
+        switch (icon) {
+          case 'clear': return WX_SUN_BIG;
+          case 'cloudy': return WX_CLOUD_BIG;
+          case 'fog': return WX_CLOUD_SMALL + WX_FOG;
+          case 'rain': return WX_CLOUD_SMALL + WX_RAIN;
+          case 'snow': return WX_CLOUD_SMALL + WX_SNOW;
+          case 'thunder': return WX_CLOUD_SMALL + WX_THUNDER;
+          case 'partly-cloudy':
+          default: return WX_SUN_SMALL + WX_CLOUD_SMALL;
+        }
+      }
+
       function loadWeather() {
         fetch('/api/weather').then(function (r) { return r.json(); }).then(function (w) {
           if (w.error) throw new Error(w.error);
+          document.getElementById('wx-icon').innerHTML = weatherIconMarkup(w.icon);
           document.getElementById('wx-temp').textContent = Math.round(w.tempC);
           document.getElementById('wx-cond').textContent = w.condition;
           document.getElementById('wx-feels').textContent = Math.round(w.feelsLikeC);
@@ -357,22 +392,32 @@
         });
       }
 
-      // ---- Hatagaya next train (derived from the Keio feed — see hatagaya.go) ----
+      // ---- Hatagaya next trains (derived from the Keio feed — see hatagaya.go) ----
       function loadHatagaya() {
         fetch('/api/hatagaya').then(function (r) { return r.json(); }).then(function (nt) {
           nt = nt || {};
           var ul = document.getElementById('hatagayaList');
           ul.innerHTML = '';
           [['up', '上り'], ['down', '下り']].forEach(function (pair) {
-            var t = nt[pair[0]];
-            var li = el('li');
-            var label = t
-              ? (t.typeName + ' ' + t.destination + '行 &middot; ' + t.status + (t.delayMin > 0 ? '（' + t.delayMin + '分遅れ）' : ''))
-              : '情報なし';
-            li.appendChild(el('div', null,
-              '<div class="line-name">' + pair[1] + '</div>' +
-              '<div class="line-state">' + label + '</div>'));
-            ul.appendChild(li);
+            var list = nt[pair[0]] || [];
+            if (list.length === 0) {
+              var li = el('li');
+              li.appendChild(el('div', null,
+                '<div class="line-name">' + pair[1] + '</div>' +
+                '<div class="line-state">情報なし</div>'));
+              ul.appendChild(li);
+              return;
+            }
+            list.forEach(function (t, i) {
+              var name = pair[1] + (i === 0 ? '' : '（' + (i + 1) + '本目）');
+              var label = t.typeName + ' ' + t.destination + '行 &middot; ' + t.status +
+                (t.delayMin > 0 ? '（' + t.delayMin + '分遅れ）' : '');
+              var li = el('li');
+              li.appendChild(el('div', null,
+                '<div class="line-name">' + name + '</div>' +
+                '<div class="line-state">' + label + '</div>'));
+              ul.appendChild(li);
+            });
           });
         }).catch(function () {
           document.getElementById('hatagayaList').innerHTML = '<li><div class="line-name">取得できません</div></li>';

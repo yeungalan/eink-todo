@@ -25,6 +25,7 @@ type Weather struct {
 	UVIndex     float64 `json:"uvIndex"`
 	Sunrise     string  `json:"sunrise"`
 	Sunset      string  `json:"sunset"`
+	Icon        string  `json:"icon"` // clear | partly-cloudy | cloudy | fog | rain | snow | thunder
 	UpdatedAt   string  `json:"updatedAt"`
 }
 
@@ -65,6 +66,35 @@ func wmoCondition(code int) string {
 		return "雷雨"
 	default:
 		return "不明"
+	}
+}
+
+// wmoIcon maps a WMO weather code to one of the icon keys the dashboard's
+// weather panel knows how to draw (see weatherIconMarkup in dashboard.html).
+func wmoIcon(code int) string {
+	switch {
+	case code == 0:
+		return "clear"
+	case code <= 2:
+		return "partly-cloudy"
+	case code == 3:
+		return "cloudy"
+	case code == 45 || code == 48:
+		return "fog"
+	case code >= 51 && code <= 57:
+		return "rain"
+	case code >= 61 && code <= 67:
+		return "rain"
+	case code >= 71 && code <= 77:
+		return "snow"
+	case code >= 80 && code <= 82:
+		return "rain"
+	case code >= 85 && code <= 86:
+		return "snow"
+	case code >= 95:
+		return "thunder"
+	default:
+		return "cloudy"
 	}
 }
 
@@ -164,6 +194,7 @@ func (c *weatherCache) fetch() (*Weather, error) {
 		TempC:       round1(raw.Current.Temperature2m),
 		FeelsLikeC:  round1(raw.Current.ApparentTemperature),
 		Condition:   wmoCondition(raw.Current.WeatherCode),
+		Icon:        wmoIcon(raw.Current.WeatherCode),
 		HumidityPct: int(raw.Current.RelativeHumidity2m),
 		WindKph:     round1(raw.Current.WindSpeed10m),
 		WindDir:     compassDir(raw.Current.WindDirection10m),

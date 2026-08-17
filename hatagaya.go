@@ -1,5 +1,7 @@
 package main
 
+import "sort"
+
 // NextTrain is one direction's next-departure info for a single station,
 // derived from the already-fetched Keio feed (no extra upstream call).
 type NextTrain struct {
@@ -11,23 +13,25 @@ type NextTrain struct {
 }
 
 const (
-	hatagayaBranch = "shinsen"
-	hatagayaName   = "幡ヶ谷"
+	hatagayaBranch    = "shinsen"
+	hatagayaName      = "幡ヶ谷"
+	hatagayaTrainsMax = 2 // how many upcoming trains to show per direction
 )
 
-// hatagayaNextTrains scans the live train list for the next up and down
-// train at/approaching Hatagaya station on the Keio New Line branch.
+// hatagayaNextTrains scans the live train list for the next few up and down
+// trains at/approaching Hatagaya station on the Keio New Line branch, each
+// direction sorted soonest-first.
 // Per network.go's branch convention, index 0 is the "up" terminal, so an
 // up train's position decreases toward Hatagaya and a down train's
 // position increases toward it.
-func hatagayaNextTrains(trains []Train) map[string]*NextTrain {
+func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 	idx, ok := stationIndex[hatagayaBranch][nfkc(hatagayaName)]
 	if !ok {
 		return nil
 	}
 	target := float64(idx)
 
-	var bestUp, bestDown *Train
+	var up, down []*Train
 	for i := range trains {
 		t := &trains[i]
 		if t.Branch != hatagayaBranch {
@@ -35,20 +39,22 @@ func hatagayaNextTrains(trains []Train) map[string]*NextTrain {
 		}
 		switch t.Direction {
 		case "down":
-			if t.Pos <= target && (bestDown == nil || t.Pos > bestDown.Pos) {
-				bestDown = t
+			if t.Pos <= target {
+				down = append(down, t)
 			}
 		case "up":
-			if t.Pos >= target && (bestUp == nil || t.Pos < bestUp.Pos) {
-				bestUp = t
+			if t.Pos >= target {
+				up = append(up, t)
 			}
 		}
 	}
 
+	// Down trains approach with increasing Pos, up trains with decreasing
+	// Pos, so in both cases "soonest" sorts toward target first.
+	sort.Slice(down, func(i, j int) bool { return down[i].Pos > down[j].Pos })
+	sort.Slice(up, func(i, j int) bool { return up[i].Pos < up[j].Pos })
+
 	toNextTrain := func(t *Train) *NextTrain {
-		if t == nil {
-			return nil
-		}
 		status := "接近中"
 		if t.AtStation && t.Pos == target {
 			status = "到着"
@@ -62,8 +68,19 @@ func hatagayaNextTrains(trains []Train) map[string]*NextTrain {
 		}
 	}
 
-	return map[string]*NextTrain{
-		"up":   toNextTrain(bestUp),
-		"down": toNextTrain(bestDown),
+	take := func(ts []*Train) []*NextTrain {
+		if len(ts) > hatagayaTrainsMax {
+			ts = ts[:hatagayaTrainsMax]
+		}
+		out := make([]*NextTrain, len(ts))
+		for i, t := range ts {
+			out[i] = toNextTrain(t)
+		}
+		return out
+	}
+
+	return map[string][]*NextTrain{
+		"up":   take(up),
+		"down": take(down),
 	}
 }
