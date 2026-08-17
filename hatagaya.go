@@ -19,7 +19,7 @@ type NextTrain struct {
 const (
 	hatagayaBranch    = "shinsen"
 	hatagayaName      = "幡ヶ谷"
-	hatagayaTrainsMax = 2 // how many upcoming trains to show per direction
+	hatagayaTrainsMax = 3 // how many upcoming trains to show per direction
 
 	// The feed gives no speed/ETA data, only a station-granularity position,
 	// so estimated arrival time is (station segments away) * this constant.

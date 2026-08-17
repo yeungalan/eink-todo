@@ -105,6 +105,31 @@
     .line-name { font-size: 26px; line-height: 1.2; }
     .line-state { font-size: 20px; }
 
+    /* Hatagaya next-trains board: big ETA first, like a real platform sign. */
+    .tgroup { margin-bottom: 28px; }
+    .tgroup:last-child { margin-bottom: 0; }
+    .tgroup-label {
+      font-size: 18px; font-weight: 800; letter-spacing: 1px;
+      padding-bottom: 6px; border-bottom: 2px solid var(--line);
+      margin-bottom: 4px;
+    }
+    .trains { list-style: none; margin: 0; padding: 0; }
+    .trains li {
+      display: flex; align-items: baseline; gap: 20px;
+      padding: 14px 0; border-top: 1px solid var(--hair);
+    }
+    .trains li:first-child { border-top: 0; }
+    .trains .eta {
+      flex: none; width: 76px;
+      font-size: 34px; font-weight: 800; line-height: 1;
+      font-variant-numeric: tabular-nums; text-align: right;
+    }
+    .trains .eta.now { font-size: 22px; }
+    .trains .eta small { font-size: 16px; font-weight: 400; margin-left: 1px; }
+    .trains .tinfo { flex: 1 1 auto; min-width: 0; }
+    .trains .ttype { font-size: 23px; line-height: 1.25; }
+    .trains .tmeta { font-size: 16px; margin-top: 3px; }
+
     /* Events */
     .events { list-style: none; margin: 0; padding: 0; }
     .events li { display: flex; gap: 18px; font-size: 26px; margin-bottom: 18px; }
@@ -264,9 +289,9 @@
           </svg>
           <h2>幡ヶ谷 次の電車</h2>
         </div>
-        <ul class="lines" id="hatagayaList">
-          <li><div class="line-name">読み込み中&hellip;</div></li>
-        </ul>
+        <div id="hatagayaList">
+          <div class="line-name">読み込み中&hellip;</div>
+        </div>
       </div>
 
       <!-- Events -->
@@ -393,35 +418,42 @@
       }
 
       // ---- Hatagaya next trains (derived from the Keio feed — see hatagaya.go) ----
+      // Rendered like a platform board: a big ETA number leads each row so
+      // the soonest train is readable at a glance, with type/destination/
+      // delay as secondary text beside it.
       function loadHatagaya() {
         fetch('/api/hatagaya').then(function (r) { return r.json(); }).then(function (nt) {
           nt = nt || {};
-          var ul = document.getElementById('hatagayaList');
-          ul.innerHTML = '';
+          var wrap = document.getElementById('hatagayaList');
+          wrap.innerHTML = '';
           [['up', '上り'], ['down', '下り']].forEach(function (pair) {
             var list = nt[pair[0]] || [];
+            var grp = el('div', 'tgroup');
+            grp.appendChild(el('div', 'tgroup-label', pair[1]));
+            var ul = el('ul', 'trains');
             if (list.length === 0) {
-              var li = el('li');
-              li.appendChild(el('div', null,
-                '<div class="line-name">' + pair[1] + '</div>' +
-                '<div class="line-state">情報なし</div>'));
-              ul.appendChild(li);
-              return;
+              ul.appendChild(el('li', null,
+                '<div class="tinfo"><div class="ttype">情報なし</div></div>'));
+            } else {
+              list.forEach(function (t) {
+                var arriving = t.status === '到着';
+                var eta = el('div', 'eta' + (arriving ? ' now' : ''),
+                  arriving ? '到着' : t.etaMin + '<small>分</small>');
+                var meta = t.status + (t.delayMin > 0 ? ' &middot; ' + t.delayMin + '分遅れ' : '');
+                var info = el('div', 'tinfo',
+                  '<div class="ttype">' + t.typeName + ' ' + t.destination + '行</div>' +
+                  '<div class="tmeta">' + meta + '</div>');
+                var li = el('li');
+                li.appendChild(eta);
+                li.appendChild(info);
+                ul.appendChild(li);
+              });
             }
-            list.forEach(function (t, i) {
-              var name = pair[1] + (i === 0 ? '' : '（' + (i + 1) + '本目）');
-              var eta = t.status === '到着' ? 'まもなく到着' : '約' + t.etaMin + '分後';
-              var label = t.typeName + ' ' + t.destination + '行 &middot; ' + eta +
-                (t.delayMin > 0 ? '（' + t.delayMin + '分遅れ）' : '');
-              var li = el('li');
-              li.appendChild(el('div', null,
-                '<div class="line-name">' + name + '</div>' +
-                '<div class="line-state">' + label + '</div>'));
-              ul.appendChild(li);
-            });
+            grp.appendChild(ul);
+            wrap.appendChild(grp);
           });
         }).catch(function () {
-          document.getElementById('hatagayaList').innerHTML = '<li><div class="line-name">取得できません</div></li>';
+          document.getElementById('hatagayaList').innerHTML = '<div class="line-name">取得できません</div>';
         });
       }
 
