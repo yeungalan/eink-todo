@@ -12,12 +12,20 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"sync"
 	"time"
 )
 
 //go:embed web/*
 var webFS embed.FS
+
+// buildID changes on every process start — i.e. on every deploy, since a
+// deploy always ends in `systemctl restart eink-todo`. The e-ink dashboard
+// polls it via /api/now and hard-reloads when it changes, since the Kindle
+// tab otherwise sits on the same static page indefinitely with no way to
+// notice a new build went out.
+var buildID = strconv.FormatInt(time.Now().UnixNano(), 36)
 
 func main() {
 	addr := os.Getenv("ADDR")
@@ -157,6 +165,7 @@ func main() {
 		json.NewEncoder(w).Encode(map[string]any{
 			"now":         now.Format(time.RFC3339),
 			"commuteMode": inCommuteWindow(now),
+			"buildID":     buildID,
 		})
 	})
 

@@ -385,8 +385,22 @@
       // the same reason serverNow is — see /api/now. While active, the
       // rotator is restricted to just the weather + next-train panels.
       var commuteMode = false;
+
+      // buildID identifies the server process currently running (see
+      // main.go) — it changes on every deploy (a restart). The Kindle tab
+      // stays open on this same static page indefinitely otherwise, so a
+      // rebuilt backend/frontend would never actually reach it without this:
+      // once the id we polled with differs from the one this page loaded
+      // with, hard-reload to pick up the new HTML/JS/assets.
+      var buildID = null;
       function loadServerNow() {
         return fetch('/api/now').then(function (r) { return r.json(); }).then(function (d) {
+          if (buildID === null) {
+            buildID = d.buildID;
+          } else if (d.buildID && d.buildID !== buildID) {
+            location.reload();
+            return;
+          }
           serverNow = new Date(d.now);
           var wasCommute = commuteMode;
           commuteMode = !!d.commuteMode;
@@ -756,11 +770,12 @@
       loadTodos();
       setInterval(loadTodos, TODO_REFRESH_MS);
 
-      // Commute mode needs finer-grained polling than the 5-minute
-      // REFRESH_MS: a train can cross the 5-minute alert threshold, or the
-      // 11:00/13:30 window boundary, well within that gap. /api/now and
-      // /api/hatagaya are cheap (server-cached at 30s already), so poll
-      // both on this faster cadence too.
+      // Faster side-channel than the 5-minute REFRESH_MS, for two things
+      // that shouldn't wait that long: detecting a new deploy (buildID, in
+      // loadServerNow) at any time of day, and — only during commute mode —
+      // a train crossing the 5-minute alert threshold or the 11:00/13:30
+      // window boundary. Both endpoints are cheap (server-cached at 30s
+      // already).
       var FAST_MS = 30 * 1000;
       setInterval(function () {
         loadServerNow();
