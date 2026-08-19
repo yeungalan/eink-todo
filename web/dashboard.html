@@ -172,11 +172,14 @@
     .events .tag.due-today { background: var(--ink); color: var(--paper); }
 
     /* ---------- Rotation progress dots ---------- */
-    .dots { display: flex; justify-content: center; gap: 12px; padding-top: 18px; }
+    /* margin, not flex `gap` — the Kindle browser's old WebKit doesn't
+       support gap on flex containers, so the dots would render touching. */
+    .dots { display: flex; justify-content: center; padding-top: 18px; }
     .dots span {
       width: 12px; height: 12px; border-radius: 50%;
       border: 2px solid var(--line);
       background: var(--paper);
+      margin: 0 6px;
     }
     .dots span.active { background: var(--ink); }
 
