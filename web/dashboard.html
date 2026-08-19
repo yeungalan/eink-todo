@@ -62,11 +62,12 @@
        even on e-ink's flat contrast, and sits above the rotating panels so
        it's visible no matter which of the two commute panels is showing. */
     .alert {
-      display: flex; align-items: center; gap: 14px;
+      display: flex; align-items: center;
       background: var(--ink); color: var(--paper);
       padding: 14px 18px; margin: 0 0 20px;
       font-size: 22px; font-weight: 800;
     }
+    .alert > * + * { margin-left: 14px; }
     .alert[hidden] { display: none; }
     .alert-badge {
       flex: none; font-size: 14px; font-weight: 800; letter-spacing: 1px;
@@ -86,9 +87,9 @@
     .panel-head {
       display: flex;
       align-items: center;
-      gap: 14px;
       margin-bottom: 22px;
     }
+    .panel-head > * + * { margin-left: 14px; }
     .panel-head .ico { width: 40px; height: 40px; flex: none; }
     .panel-head h2 {
       margin: 0;
@@ -98,7 +99,8 @@
     }
 
     /* Weather */
-    .weather { display: flex; align-items: center; gap: 20px; }
+    .weather { display: flex; align-items: center; }
+    .weather > * + * { margin-left: 20px; }
     .weather .big-ico { width: 100px; height: 100px; flex: none; }
     .weather .temp { font-size: 64px; font-weight: 800; line-height: 1; }
     .weather .cond { font-size: 28px; margin-top: 6px; }
@@ -115,7 +117,8 @@
 
     /* Train status */
     .lines { list-style: none; margin: 0; padding: 0; }
-    .lines li { display: flex; gap: 16px; align-items: center; margin-bottom: 20px; }
+    .lines li { display: flex; align-items: center; margin-bottom: 20px; }
+    .lines li > * + * { margin-left: 16px; }
     .lines li:last-child { margin-bottom: 0; }
     .marker { width: 30px; height: 30px; flex: none; display: block; }
     .line-name { font-size: 26px; line-height: 1.2; }
@@ -134,9 +137,10 @@
     }
     .trains { list-style: none; margin: 0; padding: 0; }
     .trains li {
-      display: flex; align-items: baseline; gap: 16px;
+      display: flex; align-items: baseline;
       padding: 8px 0; border-top: 1px solid var(--hair);
     }
+    .trains li > * + * { margin-left: 16px; }
     .trains li:first-child { border-top: 0; }
     .trains .eta {
       flex: none; width: 62px;
@@ -154,7 +158,8 @@
 
     /* Events */
     .events { list-style: none; margin: 0; padding: 0; }
-    .events li { display: flex; gap: 18px; font-size: 26px; margin-bottom: 18px; align-items: baseline; }
+    .events li { display: flex; font-size: 26px; margin-bottom: 18px; align-items: baseline; }
+    .events li > * + * { margin-left: 18px; }
     .events li:last-child { margin-bottom: 0; }
     .events .t { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
@@ -204,14 +209,18 @@
     .todo .row {
       display: flex;
       align-items: center;
-      gap: 26px;
       padding: 20px 4px;
       font-size: 26px;
     }
+    .todo .row > * + * { margin-left: 26px; }
 
-    /* Due-date badge at the end of a todo row. */
-    .due {
+    /* Due-date badge at the end of a todo row. margin-left: auto (pushing it
+       to the row's right edge) needs to win over the `.todo .row > * + *`
+       spacing rule above, hence the more specific selector here. */
+    .todo .row .due {
       margin-left: auto;
+    }
+    .due {
       flex: none;
       font-size: 18px;
       font-variant-numeric: tabular-nums;
