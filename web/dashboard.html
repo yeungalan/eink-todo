@@ -243,7 +243,7 @@
 
     <header class="masthead">
       <h1>ダッシュボード</h1>
-      <p class="updated">更新：<span id="updated">&hellip;</span></p>
+      <p class="updated">更新：<span id="updated">&hellip;</span>　次回更新：<span id="nextUpdated">&hellip;</span></p>
     </header>
 
     <hr class="rule">
@@ -427,6 +427,14 @@
         document.getElementById('updated').textContent =
           serverNow.toLocaleString('ja-JP', {
             year: 'numeric', month: 'long', day: 'numeric',
+            hour: '2-digit', minute: '2-digit',
+            timeZone: 'Asia/Tokyo'
+          });
+        // loadAll() (which calls setUpdated) runs every REFRESH_MS off this
+        // same serverNow, so the next call lands this far after it.
+        var nextUpdate = new Date(serverNow.getTime() + REFRESH_MS);
+        document.getElementById('nextUpdated').textContent =
+          nextUpdate.toLocaleString('ja-JP', {
             hour: '2-digit', minute: '2-digit',
             timeZone: 'Asia/Tokyo'
           });
