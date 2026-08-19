@@ -521,12 +521,21 @@
       function hideCommuteAlert() {
         document.getElementById('commuteAlert').hidden = true;
       }
+      // Hatagaya's up direction also carries trains that just terminate at
+      // Keio's own Shinjuku (新線新宿/京王線新宿) without continuing onto the
+      // Toei line — only the through-service ones (destination mentions
+      // 都営新宿線, or the through terminus 本八幡) are the ones worth an
+      // arrival alert for. Down direction is unfiltered.
+      function isNotifiableUpTrain(t) {
+        return t.destination.indexOf('都営新宿線') !== -1 || t.destination.indexOf('本八幡') !== -1;
+      }
       function updateCommuteAlert(nt) {
         if (!commuteMode) { hideCommuteAlert(); return; }
         var soonest = null;
         ['up', 'down'].forEach(function (dir) {
           (nt[dir] || []).forEach(function (t) {
             if (t.status === '予定' || t.etaMin > COMMUTE_ALERT_ETA_MIN) return;
+            if (dir === 'up' && !isNotifiableUpTrain(t)) return;
             if (!soonest || t.etaMin < soonest.t.etaMin) soonest = { dir: dir, t: t };
           });
         });
