@@ -180,6 +180,60 @@ func hatagayaScheduledDepartures(searchFrom time.Time, dir string, n int) []time
 	return out
 }
 
+// hatagayaScheduleMatchWindow bounds how far a live-tracked train's rough
+// position-based ETA guess (see hatagayaMinPerSegment) may sit from a
+// published departure and still be considered "the same train" by
+// hatagayaMatchSchedule. Set below half the timetable's tightest peak
+// headway (~5 min) so it can't misfire onto the wrong neighboring
+// departure.
+const hatagayaScheduleMatchWindow = 4 * time.Minute
+
+// hatagayaMatchSchedule looks for the published departure closest to a
+// live-tracked train's rough ETA guess (now + rawEtaMin) and, if one falls
+// within hatagayaScheduleMatchWindow, returns the ETA implied by that
+// departure instead — the timetable minute is exact where the position-based
+// guess is only ever "about N min" (see hatagayaMinPerSegment's doc
+// comment). delayMin (Keio's own reported delay for this train) is added on
+// top, so a train running late still gets an accurate ETA rather than being
+// silently snapped back to its original slot. Returns ok=false if nothing in
+// the timetable is close enough — e.g. an extra/off-timetable working —
+// in which case the raw estimate should be kept as-is.
+func hatagayaMatchSchedule(now time.Time, dir string, rawEtaMin, delayMin int) (etaMin int, ok bool) {
+	guess := now.Add(time.Duration(rawEtaMin) * time.Minute)
+	from := guess.Add(-hatagayaScheduleMatchWindow)
+	if from.Before(now) {
+		from = now
+	}
+
+	var best time.Time
+	bestDiff := time.Duration(-1)
+	for _, dep := range hatagayaScheduledDepartures(from, dir, 8) {
+		diff := dep.Sub(guess)
+		if diff < 0 {
+			diff = -diff
+		}
+		if diff > hatagayaScheduleMatchWindow {
+			if dep.After(guess) {
+				break // sorted ascending — no closer candidate remains
+			}
+			continue
+		}
+		if bestDiff < 0 || diff < bestDiff {
+			best, bestDiff = dep, diff
+		}
+	}
+	if bestDiff < 0 {
+		return 0, false
+	}
+
+	adjusted := best.Add(time.Duration(delayMin) * time.Minute)
+	etaMin = int(adjusted.Sub(now).Minutes() + 0.5)
+	if etaMin < 0 {
+		etaMin = 0
+	}
+	return etaMin, true
+}
+
 // hatagayaScheduleEstimates fills in up to n schedule-derived NextTrain
 // entries for direction dir, considering only departures at or after
 // searchFrom — pass a time just past the last live-tracked train (rather

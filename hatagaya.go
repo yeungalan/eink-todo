@@ -56,6 +56,7 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 		return nil
 	}
 	target := float64(idx)
+	now := time.Now()
 
 	// 笹塚 sits at the boundary between the main line and this branch, and
 	// station-only placement always claims it for the trunk ("main") branch
@@ -94,7 +95,7 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 	sort.Slice(down, func(i, j int) bool { return down[i].Pos > down[j].Pos })
 	sort.Slice(up, func(i, j int) bool { return up[i].Pos < up[j].Pos })
 
-	toNextTrain := func(t *Train) *NextTrain {
+	toNextTrain := func(t *Train, dir string) *NextTrain {
 		dist := t.Pos - target
 		if dist < 0 {
 			dist = -dist
@@ -104,6 +105,12 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 		if t.AtStation && t.Pos == target {
 			status = "到着"
 			etaMin = 0
+		} else if snapped, ok := hatagayaMatchSchedule(now, dir, etaMin, t.DelayMin); ok {
+			// The distance*hatagayaMinPerSegment guess is coarse (documented
+			// on the constant above) — when it lands close to a published
+			// departure, prefer that departure's exact minute (plus Keio's
+			// own reported delay) over our rough approximation.
+			etaMin = snapped
 		}
 		return &NextTrain{
 			DirLabel:    t.DirLabel,
@@ -121,13 +128,12 @@ func hatagayaNextTrains(trains []Train) map[string][]*NextTrain {
 		}
 		out := make([]*NextTrain, len(ts))
 		for i, t := range ts {
-			out[i] = toNextTrain(t)
+			out[i] = toNextTrain(t, dir)
 		}
 		// The live feed doesn't always have hatagayaTrainsMax trains in
 		// range (e.g. off-peak gaps) — pad out to the full count using the
 		// published timetable so the panel isn't left showing "情報なし".
 		if short := hatagayaTrainsMax - len(out); short > 0 {
-			now := time.Now()
 			searchFrom := now
 			if n := len(out); n > 0 {
 				lastDep := now.Add(time.Duration(out[n-1].EtaMin) * time.Minute).Add(hatagayaScheduleGuard)
