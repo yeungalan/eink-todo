@@ -46,7 +46,9 @@ func wmoCondition(code int) string {
 	switch {
 	case code == 0:
 		return "快晴"
-	case code <= 2:
+	case code == 1:
+		return "晴れ"
+	case code == 2:
 		return "ほぼ晴れ"
 	case code == 3:
 		return "曇り"
@@ -73,9 +75,12 @@ func wmoCondition(code int) string {
 // weather panel knows how to draw (see weatherIconMarkup in dashboard.html).
 func wmoIcon(code int) string {
 	switch {
-	case code == 0:
+	// WMO 0 (clear) and 1 (mainly clear) both read as "sunny" day-to-day —
+	// true code-0 skies are rare, so lumping 1 in with 2 (partly cloudy)
+	// made the sun icon almost never show even on clear days.
+	case code <= 1:
 		return "clear"
-	case code <= 2:
+	case code == 2:
 		return "partly-cloudy"
 	case code == 3:
 		return "cloudy"
