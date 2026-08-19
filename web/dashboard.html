@@ -516,8 +516,12 @@
       // Fires only during commuteMode, off the same /api/hatagaya payload
       // the next-train panel renders. "予定" rows are schedule-derived
       // estimates (no live position), too rough to page-worthy alert on —
-      // only live-tracked trains (接近中/到着) count.
-      var COMMUTE_ALERT_ETA_MIN = 5;
+      // only live-tracked trains (接近中/到着) count. The window is 5-10 min
+      // out — enough of a heads-up to leave, not so early it's noise, and
+      // it stops once the train drops under 5 min (no point alerting on a
+      // train you can no longer catch anyway).
+      var COMMUTE_ALERT_ETA_MIN_LOW = 5;
+      var COMMUTE_ALERT_ETA_MIN_HIGH = 10;
       function hideCommuteAlert() {
         document.getElementById('commuteAlert').hidden = true;
       }
@@ -534,12 +538,13 @@
         if (!commuteMode) { hideCommuteAlert(); return; }
         var soonest = null;
         (nt.up || []).forEach(function (t) {
-          if (t.status === '予定' || t.etaMin > COMMUTE_ALERT_ETA_MIN) return;
+          if (t.status === '予定') return;
+          if (t.etaMin < COMMUTE_ALERT_ETA_MIN_LOW || t.etaMin > COMMUTE_ALERT_ETA_MIN_HIGH) return;
           if (!isNotifiableUpTrain(t)) return;
           if (!soonest || t.etaMin < soonest.etaMin) soonest = t;
         });
         if (!soonest) { hideCommuteAlert(); return; }
-        var etaText = soonest.status === '到着' ? '到着' : soonest.etaMin + '分後';
+        var etaText = soonest.etaMin + '分後';
         document.getElementById('commuteAlertText').textContent =
           '上り ' + soonest.destination + '行 ' + etaText;
         document.getElementById('commuteAlert').hidden = false;
