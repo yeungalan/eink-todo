@@ -148,11 +148,16 @@ func main() {
 	// above) so date-boundary logic — e.g. today/tomorrow/N-days-out labels
 	// on the dashboard — is computed from a trustworthy source instead of
 	// the Kindle's own clock, which has been seen drifting or defaulting to
-	// the wrong timezone.
+	// the wrong timezone. commuteMode is computed here too, for the same
+	// reason: the Kindle can't be trusted to gate its own weekday/time window.
 	mux.HandleFunc("/api/now", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json; charset=utf-8")
 		w.Header().Set("Cache-Control", "no-store")
-		json.NewEncoder(w).Encode(map[string]string{"now": time.Now().Format(time.RFC3339)})
+		now := time.Now()
+		json.NewEncoder(w).Encode(map[string]any{
+			"now":         now.Format(time.RFC3339),
+			"commuteMode": inCommuteWindow(now),
+		})
 	})
 
 	mux.HandleFunc("/api/meta", func(w http.ResponseWriter, r *http.Request) {
@@ -343,6 +348,28 @@ func (c *stateCache) get() (*State, error) {
 	close(wait)
 	c.mu.Unlock()
 	return st, err
+}
+
+// commuteWindowStartHour, commuteWindowStartMin, commuteWindowEndHour and
+// commuteWindowEndMin bound the weekday midday commute window (server-local
+// time, i.e. Asia/Tokyo) during which the e-ink dashboard switches to a
+// dedicated next-train + weather view instead of rotating through every
+// panel.
+const (
+	commuteWindowStartHour, commuteWindowStartMin = 11, 0
+	commuteWindowEndHour, commuteWindowEndMin     = 13, 30
+)
+
+// inCommuteWindow reports whether t falls on a weekday within the midday
+// commute window above.
+func inCommuteWindow(t time.Time) bool {
+	switch t.Weekday() {
+	case time.Saturday, time.Sunday:
+		return false
+	}
+	start := time.Date(t.Year(), t.Month(), t.Day(), commuteWindowStartHour, commuteWindowStartMin, 0, 0, t.Location())
+	end := time.Date(t.Year(), t.Month(), t.Day(), commuteWindowEndHour, commuteWindowEndMin, 0, 0, t.Location())
+	return !t.Before(start) && !t.After(end)
 }
 
 func logRequests(next http.Handler) http.Handler {

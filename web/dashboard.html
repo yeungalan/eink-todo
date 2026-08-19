@@ -57,6 +57,22 @@
 
     .rule { border: 0; border-top: 3px solid var(--line); margin: 20px 0; }
 
+    /* Commute-mode alert: a train is due within 5 min. Inverted (black on
+       white becomes white on black) so it reads as a distinct, urgent block
+       even on e-ink's flat contrast, and sits above the rotating panels so
+       it's visible no matter which of the two commute panels is showing. */
+    .alert {
+      display: flex; align-items: center; gap: 14px;
+      background: var(--ink); color: var(--paper);
+      padding: 14px 18px; margin: 0 0 20px;
+      font-size: 22px; font-weight: 800;
+    }
+    .alert[hidden] { display: none; }
+    .alert-badge {
+      flex: none; font-size: 14px; font-weight: 800; letter-spacing: 1px;
+      border: 1.5px solid var(--paper); border-radius: 4px; padding: 3px 8px;
+    }
+
     /* ---------- Rotator: one full-width panel visible at a time ---------- */
     #panels { flex: 1 1 auto; position: relative; }
     .panel { display: none; }
@@ -220,9 +236,14 @@
 
     <hr class="rule">
 
+    <div class="alert" id="commuteAlert" hidden>
+      <span class="alert-badge">まもなく到着</span>
+      <span id="commuteAlertText"></span>
+    </div>
+
     <div id="panels">
       <!-- Weather -->
-      <div class="panel active">
+      <div class="panel active" data-commute="1">
         <div class="panel-head">
           <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
             <g stroke="#000" stroke-width="2.4" stroke-linecap="round" fill="none">
@@ -297,7 +318,7 @@
       </div>
 
       <!-- Hatagaya next train (derived from the Keio feed above) -->
-      <div class="panel">
+      <div class="panel" data-commute="1">
         <div class="panel-head">
           <svg class="ico" viewBox="0 0 48 48" aria-hidden="true">
             <rect x="12" y="6" width="24" height="26" rx="6" fill="none" stroke="#000" stroke-width="2.5"/>
@@ -358,9 +379,21 @@
       // back to the local clock only if the fetch itself fails, so the
       // dashboard still renders something rather than going blank.
       var serverNow = new Date();
+
+      // commuteMode mirrors main.go's inCommuteWindow: weekdays 11:00-13:30
+      // server time. Computed server-side (not from the Kindle's clock) for
+      // the same reason serverNow is — see /api/now. While active, the
+      // rotator is restricted to just the weather + next-train panels.
+      var commuteMode = false;
       function loadServerNow() {
         return fetch('/api/now').then(function (r) { return r.json(); }).then(function (d) {
           serverNow = new Date(d.now);
+          var wasCommute = commuteMode;
+          commuteMode = !!d.commuteMode;
+          if (commuteMode !== wasCommute) {
+            refreshRotationTargets();
+            if (!commuteMode) hideCommuteAlert();
+          }
         }).catch(function () { /* keep the previous serverNow / local fallback */ });
       }
 
@@ -465,6 +498,32 @@
         });
       }
 
+      // ---- Commute-mode "arriving soon" alert ----
+      // Fires only during commuteMode, off the same /api/hatagaya payload
+      // the next-train panel renders. "予定" rows are schedule-derived
+      // estimates (no live position), too rough to page-worthy alert on —
+      // only live-tracked trains (接近中/到着) count.
+      var COMMUTE_ALERT_ETA_MIN = 5;
+      function hideCommuteAlert() {
+        document.getElementById('commuteAlert').hidden = true;
+      }
+      function updateCommuteAlert(nt) {
+        if (!commuteMode) { hideCommuteAlert(); return; }
+        var soonest = null;
+        ['up', 'down'].forEach(function (dir) {
+          (nt[dir] || []).forEach(function (t) {
+            if (t.status === '予定' || t.etaMin > COMMUTE_ALERT_ETA_MIN) return;
+            if (!soonest || t.etaMin < soonest.t.etaMin) soonest = { dir: dir, t: t };
+          });
+        });
+        if (!soonest) { hideCommuteAlert(); return; }
+        var dirLabel = soonest.dir === 'up' ? '上り' : '下り';
+        var etaText = soonest.t.status === '到着' ? '到着' : soonest.t.etaMin + '分後';
+        document.getElementById('commuteAlertText').textContent =
+          dirLabel + ' ' + soonest.t.destination + '行 ' + etaText;
+        document.getElementById('commuteAlert').hidden = false;
+      }
+
       // ---- Hatagaya next trains (derived from the Keio feed — see hatagaya.go) ----
       // Rendered like a platform board: a big ETA number leads each row so
       // the soonest train is readable at a glance, with type/destination/
@@ -472,6 +531,7 @@
       function loadHatagaya() {
         fetch('/api/hatagaya').then(function (r) { return r.json(); }).then(function (nt) {
           nt = nt || {};
+          updateCommuteAlert(nt);
           var wrap = document.getElementById('hatagayaList');
           wrap.innerHTML = '';
           [['up', '上り'], ['down', '下り']].forEach(function (pair) {
@@ -650,7 +710,16 @@
 
       function refreshRotationTargets() {
         var wasActive = panels[panelIndex];
-        panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+        var all = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+        // Commute mode: weekdays 11:00-13:30 server time (main.go's
+        // inCommuteWindow) — restrict the rotation to just the two panels
+        // marked data-commute (weather + Hatagaya next-train), dropping
+        // 運行情報/events/todo out of the cycle until the window ends.
+        panels = commuteMode ? all.filter(function (p) { return p.dataset.commute === '1'; }) : all;
+        // Panels dropped by the filter above may still carry .active from
+        // before the mode switch — clear it so they don't render behind/
+        // alongside whichever commute panel is now current.
+        all.forEach(function (p) { if (panels.indexOf(p) === -1) p.classList.remove('active'); });
         dotsEl.innerHTML = '';
         panels.forEach(function () { dotsEl.appendChild(el('span')); });
         dots = Array.prototype.slice.call(dotsEl.children);
@@ -686,6 +755,17 @@
 
       loadTodos();
       setInterval(loadTodos, TODO_REFRESH_MS);
+
+      // Commute mode needs finer-grained polling than the 5-minute
+      // REFRESH_MS: a train can cross the 5-minute alert threshold, or the
+      // 11:00/13:30 window boundary, well within that gap. /api/now and
+      // /api/hatagaya are cheap (server-cached at 30s already), so poll
+      // both on this faster cadence too.
+      var FAST_MS = 30 * 1000;
+      setInterval(function () {
+        loadServerNow();
+        if (commuteMode) loadHatagaya();
+      }, FAST_MS);
     })();
   </script>
 </body>
