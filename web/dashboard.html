@@ -148,6 +148,9 @@
       font-variant-numeric: tabular-nums; text-align: right;
     }
     .trains .eta.now { font-size: 18px; }
+    /* ETAs over an hour ("1時間5分") — shrunk to fit the fixed-width column. */
+    .trains .eta.long { font-size: 17px; white-space: nowrap; }
+    .trains .eta.long small { font-size: 10px; margin-left: 0; }
     .trains .eta small { font-size: 14px; font-weight: 400; margin-left: 1px; }
     .trains .tinfo { flex: 1 1 auto; min-width: 0; }
     .trains .ttype { font-size: 19px; line-height: 1.2; }
@@ -594,8 +597,11 @@
             } else {
               list.forEach(function (t) {
                 var arriving = t.status === '到着';
-                var eta = el('div', 'eta' + (arriving ? ' now' : ''),
-                  arriving ? '到着' : t.etaMin + '<small>分</small>');
+                var long = !arriving && t.etaMin > 60;
+                var etaHtml = arriving ? '到着'
+                  : long ? Math.floor(t.etaMin / 60) + '<small>時間</small>' + (t.etaMin % 60) + '<small>分</small>'
+                  : t.etaMin + '<small>分</small>';
+                var eta = el('div', 'eta' + (arriving ? ' now' : long ? ' long' : ''), etaHtml);
                 var meta = t.status + (t.delayMin > 0 ? ' &middot; ' + t.delayMin + '分遅れ' : '');
                 // Schedule-derived fallback entries (status "予定") carry no
                 // train-type detail — omit the leading space that'd leave.
