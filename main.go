@@ -121,12 +121,22 @@ func main() {
 			}{Name: "都営新宿線", LineStatus: *toeiStatus})
 		}
 		for _, jr := range jrLines {
-			if status, err := jrKanto.get(jr.Slug); err == nil {
-				lines = append(lines, struct {
-					Name string `json:"name"`
-					LineStatus
-				}{Name: jr.Name, LineStatus: *status})
+			// Never drop a JR row: kanto.aspx publishes no route listing
+			// outside JR's 4:00–翌2:00 info window, so a restart in that gap
+			// (with no stale cache to fall back on) would otherwise make the
+			// line vanish from the board until morning.
+			status, err := jrKanto.get(jr.Slug)
+			if err != nil {
+				text := "取得できません"
+				if h := time.Now().Hour(); h >= 2 && h < 4 {
+					text = "情報提供時間外（4:00〜）"
+				}
+				status = &LineStatus{Text: text, Level: "error"}
 			}
+			lines = append(lines, struct {
+				Name string `json:"name"`
+				LineStatus
+			}{Name: jr.Name, LineStatus: *status})
 		}
 		json.NewEncoder(w).Encode(lines)
 	})
