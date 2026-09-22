@@ -503,9 +503,10 @@
       // ---- Train status (Keio's own feed + other operators via /api/lines) ----
       // Icons are JR East's own status set (traininfo.jreast.co.jp/train_info/
       // kanto.aspx: ico_info_{normal,delay,adjust,info,direct}.svg) so
-      // severity reads the same way here as on their site — green circle,
-      // orange triangle, red X, orange "!", grey through-service-cut arrow —
-      // rather than collapsing every non-normal level into one icon. Keio/
+      // severity reads the same way here as on their site — circle,
+      // triangle, X, "!", through-service-cut arrow — rather than collapsing
+      // every non-normal level into one icon. Recolored solid black (JR's
+      // green/orange/red/grey dither poorly on e-ink); shape carries it. Keio/
       // Toei only ever report "stop" (full suspension, no JR-style "adjust"
       // vs "stopdirect" distinction), so it maps to the same red X as JR's
       // "adjust".
